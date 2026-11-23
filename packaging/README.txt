@@ -55,9 +55,7 @@ Windows の［設定］→［時刻と言語］→［言語と地域］→［言
 - MyPLaMo SnapTrans 本体: MIT License（LICENSE.txt）
 - 翻訳モデル PLaMo 3 Translate: PLaMo コミュニティライセンス契約（Preferred Networks）
     https://plamo.preferredai.jp/info/plamo-community-license-ja
-  モデルを使うには、このライセンスへの同意が必要です。最新版（2026 年 11 月 17 日改定）の本文を
-  確認してください。会社など組織の内部での利用を含む商業目的の利用には、PFN への事前登録などの
-  条件があります。
+  モデルを使うには、このライセンスへの同意が必要です。
 - 同梱しているソフトウェア（llama.cpp、.NET、Windows App SDK、Visual C++ ランタイム、Tesseract など）:
   THIRD-PARTY-NOTICES.txt
   同梱している Microsoft のコンポーネント（Windows App SDK、.NET、Visual C++ ランタイムなど）は、
@@ -122,9 +120,7 @@ The "Open Windows language settings" button in Settings takes you there.
 - MyPLaMo SnapTrans itself: MIT License (LICENSE.txt)
 - PLaMo 3 Translate model: PLaMo Community License Agreement (Preferred Networks)
     https://plamo.preferredai.jp/info/plamo-community-license-en
-  You must agree to this license to use the model. Read the current version (revised on
-  November 17, 2026). Use for a commercial purpose, including internal use within an
-  organization, has conditions such as prior registration with PFN.
+  You must agree to this license to use the model.
 - Bundled software (llama.cpp, .NET, Windows App SDK, Visual C++ runtime, Tesseract and others):
   THIRD-PARTY-NOTICES.txt
   The bundled Microsoft components (Windows App SDK, .NET, Visual C++ runtime and others) are
