@@ -22,6 +22,8 @@ final class SnapInput: @unchecked Sendable {
     private var dragging = false        // tap thread only
     private var swallowUp = false       // tap thread only
     private(set) var isInstalled = false
+    /// Diagnostics (counts only): left mouse-downs the tap saw, how many had the selected modifiers, tap re-enables.
+    private(set) var seenDowns = 0, matchedDowns = 0, reenabled = 0
 
     static let relevant: CGEventFlags = [.maskControl, .maskAlternate, .maskShift, .maskCommand]
 
@@ -70,12 +72,15 @@ final class SnapInput: @unchecked Sendable {
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
+            reenabled += 1
             if dragging { dragging = false; swallowUp = true; main { self.onCancel?("tap disabled") } }
             return Unmanaged.passUnretained(event)
         case .leftMouseDown:
             let (mods, on) = lock.withLock { (_modifiers, _enabled) }
             let flags = event.flags.intersection(Self.relevant)
+            seenDowns += 1
             guard on, !mods.isEmpty, flags == mods else { return Unmanaged.passUnretained(event) }
+            matchedDowns += 1
             dragging = true
             let p = event.location
             main { self.onBegin?(p) }
