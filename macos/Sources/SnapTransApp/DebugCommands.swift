@@ -47,6 +47,8 @@ enum DebugCommands {
         case "close-settings": app.settingsWindow?.window.orderOut(nil)
         case "hide-popup": app.popup.hide()
         case "quit": app.quit()
+        case "status":
+            AppLog.log("status: AXIsProcessTrusted=\(Permissions.accessibility) CGPreflightScreenCaptureAccess=\(Permissions.screenRecording) CGPreflightListenEventAccess=\(CGPreflightListenEventAccess()) tap=\(app.input.isInstalled)")
         case "scroll" where p.count > 1: scrollRequest?(p[1])
         case "lang" where p.count > 1: app.settings.language = p[1]; app.applyLanguage(); app.settingsWindow?.window.title = Loc.t("Settings_Title")
         case "theme" where p.count > 1: app.settings.theme = p[1]; app.applyTheme()
