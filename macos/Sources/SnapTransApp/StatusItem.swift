@@ -49,9 +49,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         refresh()
     }
 
+    private var iconIsDark: Bool?
+
     private func updateIcon() {
         guard let button = item.button else { return }
         let dark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        // Setting the image re-triggers the effectiveAppearance observation: only act on a real change (no loop).
+        if dark == iconIsDark { return }
+        iconIsDark = dark
         let img = NSImage(data: Data((dark ? Self.darkSVG : Self.lightSVG).utf8))
         img?.size = NSSize(width: 18, height: 18)
         img?.isTemplate = false

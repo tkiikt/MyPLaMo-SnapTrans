@@ -37,6 +37,8 @@ enum ScreenCapture {
         config.height = Int((clipped.height * scale).rounded())
         config.scalesToFit = false
         config.showsCursor = false
+        config.capturesAudio = false          // screen pixels only: no system audio
+        config.captureMicrophone = false      // and never the microphone
         config.captureResolution = .best
         config.colorSpaceName = CGColorSpace.sRGB
         do { return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) }

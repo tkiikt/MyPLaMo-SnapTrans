@@ -45,6 +45,17 @@ copies `llama-server` and the 10 dylibs it links into `Contents/Helpers/engine` 
   changes their hashes, so regenerate `engine-manifest.json` from the signed files in that case. An unnotarized ZIP is
   blocked by Gatekeeper on first launch (System Settings → Privacy & Security → "Open Anyway").
 
+## Permission prompts users will see
+
+| When | Dialog | Why / how often |
+| --- | --- | --- |
+| "Request" in Settings → macOS permissions | Accessibility, Screen & System Audio Recording | Once per signing identity. Granting Screen Recording takes effect after the app restarts. |
+| First capture after Screen Recording was granted (any path: Control + Option drag, Translate Area, shortcut) | "MyPLaMo SnapTrans is requesting to bypass the system private window picker and directly access your screen and audio" | Shown by macOS (15+) for every app that captures with ScreenCaptureKit without Apple's window picker. macOS asks again periodically (about monthly since macOS 15.1, as Apple has decided; an app cannot suppress it). The picker (SCContentSharingPicker) does not fit "drag a rectangle anywhere", so SnapTrans keeps direct capture. Audio is never captured (`capturesAudio = false`, `captureMicrophone = false`); the wording about audio is fixed by macOS. |
+
+SnapTrans does not read or write Desktop, Documents, Downloads or other protected folders: by default everything is in
+`~/Library/Application Support/MyPLaMo-SnapTrans` (settings, log, verification cache, models). A folder prompt appears
+only if the user picks such a folder as the model folder (macOS then asks once for that folder).
+
 ## Testing hooks (never active in normal use)
 
 * `SNAPTRANS_PROFILE=<dir>` – settings, log and verification cache in another folder.

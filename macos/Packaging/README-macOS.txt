@@ -29,6 +29,9 @@ Built with PLaMo
    - 画面収録: 選んだ範囲の文字を読むために必要です。
    - アクセシビリティ: Control + Option を押しながらのドラッグを受け取るために必要です。
    許可はシステム設定 →「プライバシーとセキュリティ」で行います。変更が反映されないときはアプリを再起動します。
+   画面収録を許可した後の最初の翻訳で、macOS が「システムプライベートウインドウピッカーをバイパスして画面と
+   オーディオに直接アクセスすることが要求されています」と確認します。「許可」で続きます。macOS の仕様で、
+   この確認はおおむね毎月出ます（アプリからは止められません）。音声は取得しません。
 5. Control + Option を押しながら、画面上の文字を左ドラッグで囲みます。離すと翻訳がポップアップで表示されます。
    - ドラッグ中に Esc でキャンセル。ポップアップは × か Esc で閉じます。ポップアップはドラッグで動かせます。
    - ポップアップのボタン: 原文⇄訳文の切り替え、コピー。
@@ -71,7 +74,9 @@ Built with PLaMo
    (0.8B or 2B to start). Models come directly from PFN's Hugging Face repositories.
 3. Permissions (status in Settings → macOS permissions): Screen Recording (to read the selected area) and
    Accessibility (to receive Control + Option + drag). Grant them in System Settings → Privacy & Security; restart
-   the app if a change does not take effect.
+   the app if a change does not take effect. On the first translation after that, macOS asks whether the app may
+   "bypass the system private window picker and directly access your screen and audio"; choose Allow. macOS repeats
+   this about once a month (the app cannot turn it off). No audio is ever captured.
 4. Hold Control + Option and left-drag around text. Esc cancels; × or Esc closes the card; drag the card to move it.
    Without Accessibility, use "Translate Area" in the menu or Control + Option + T.
 

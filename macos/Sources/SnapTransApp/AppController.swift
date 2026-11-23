@@ -204,6 +204,7 @@ final class AppController: ObservableObject {
     // MARK: selection → capture → OCR → translate
 
     private func selectionBegan(at p: CGPoint) {
+        AppLog.log("selection: drag began (event tap)")
         job?.cancel()
         popup.hide()
         overlay.begin(at: p)
@@ -219,6 +220,7 @@ final class AppController: ObservableObject {
 
     func startInteractiveSelection() {
         guard !overlay.isInteractive else { return }
+        AppLog.log("selection: Translate Area started")
         job?.cancel()
         popup.hide()
         overlay.startInteractive { [weak self] r in
@@ -238,6 +240,7 @@ final class AppController: ObservableObject {
         let t0 = Date()
         popup.hide()   // never part of our own capture (also excluded by the capture filter)
         var original = ""
+        AppLog.log("capture: start")
         do {
             let image = try await ScreenCapture.capture(rect, keepWindows: [settingsWindow?.window].compactMap { $0 })
             let tCapture = Date().timeIntervalSince(t0)
