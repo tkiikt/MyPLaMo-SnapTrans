@@ -36,6 +36,9 @@ Built with PLaMo
    - ドラッグ中に Esc でキャンセル。ポップアップは × か Esc で閉じます。ポップアップはドラッグで動かせます。
    - ポップアップのボタン: 原文⇄訳文の切り替え、コピー。
    - アクセシビリティを許可しない場合も、メニューの「範囲を翻訳」か Control + Option + T で範囲を選べます。
+   - Windows から Mac をリモート操作しているときは、Windows 版 SnapTrans の Ctrl + Alt + ドラッグと
+     重なり、手元の Windows 側が先に受け取ってしまいます。どちらかのアプリの設定でショートカットを
+     変えてください（Mac 版は設定画面の「ショートカット」で変更できます）。
 6. メニューバーのアイコン: クリックで設定、右クリックで「範囲を翻訳 / 最後の翻訳を表示 /
    ドラッグ翻訳を有効にする / 設定を開く / 終了」。
 
@@ -79,6 +82,9 @@ Built with PLaMo
    this about once a month (the app cannot turn it off). No audio is ever captured.
 4. Hold Control + Option and left-drag around text. Esc cancels; × or Esc closes the card; drag the card to move it.
    Without Accessibility, use "Translate Area" in the menu or Control + Option + T.
+   If you control this Mac remotely from Windows, the drag clashes with Ctrl + Alt + drag in SnapTrans for Windows,
+   and the Windows side receives it first. Change the shortcut in one of the two apps (on the Mac: Settings →
+   Shortcut).
 
 * Data: settings, log and verification results in ~/Library/Application Support/MyPLaMo-SnapTrans; models in the
   folder chosen in Settings. To uninstall, quit from the menu, delete the app and that folder, and remove the app

@@ -52,9 +52,14 @@ copies `llama-server` and the 10 dylibs it links into `Contents/Helpers/engine` 
 | "Request" in Settings → macOS permissions | Accessibility, Screen & System Audio Recording | Once per signing identity. Granting Screen Recording takes effect after the app restarts. |
 | First capture after Screen Recording was granted (any path: Control + Option drag, Translate Area, shortcut) | "MyPLaMo SnapTrans is requesting to bypass the system private window picker and directly access your screen and audio" | Shown by macOS (15+) for every app that captures with ScreenCaptureKit without Apple's window picker. macOS asks again periodically (about monthly since macOS 15.1, as Apple has decided; an app cannot suppress it). The picker (SCContentSharingPicker) does not fit "drag a rectangle anywhere", so SnapTrans keeps direct capture. Audio is never captured (`capturesAudio = false`, `captureMicrophone = false`); the wording about audio is fixed by macOS. |
 
-Remote desktop: when the Mac is controlled from another computer, an app there (e.g. SnapTrans for Windows, which also
-uses Ctrl + Alt + drag) can take the same key + drag before it reaches the Mac. Settings says so, and warns when another
-app on the Mac has a filtering event tap on mouse clicks.
+リモート操作の注意: Windows から Mac をリモート操作しているときは、Windows 版 SnapTrans の Ctrl + Alt + ドラッグと
+Mac 版の Control + Option + ドラッグが重なり、手元の Windows 側が先に受け取ってしまいます。どちらかのアプリの設定で
+ショートカットを変えてください（Mac 版の既定は Control + Option のままです）。
+
+Remote control: if you control the Mac remotely from Windows, Control + Option + drag on the Mac clashes with
+Ctrl + Alt + drag in SnapTrans for Windows, and the Windows side receives it first. Change the shortcut in one of the
+two apps (the Mac default stays Control + Option). Settings also warns when another app on the Mac has a filtering
+event tap on mouse clicks.
 
 SnapTrans does not read or write Desktop, Documents, Downloads or other protected folders: by default everything is in
 `~/Library/Application Support/MyPLaMo-SnapTrans` (settings, log, verification cache, models). A folder prompt appears
