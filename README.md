@@ -211,12 +211,7 @@ MyPLaMo SnapTrans 本体（このリポジトリのソースコード）は [MIT
 
 #### 翻訳モデル PLaMo 3 Translate（PLaMo コミュニティライセンス）
 
-モデルはこのリポジトリにも配布 ZIP にも含まれません。利用者が設定画面でライセンスに同意したうえで、PFN の Hugging Face から直接ダウンロードし、利用者自身が [PLaMo コミュニティライセンス契約](https://plamo.preferredai.jp/info/plamo-community-license-ja)（[English](https://plamo.preferredai.jp/info/plamo-community-license-en)）に従って使います。2026 年 11 月 23 日時点の最新版は「2025 年 2 月 25 日制定、2026 年 11 月 9 日改定、2026 年 11 月 17 日改定」です。必ず本文を確認してください。利用者に特に関係する点（要約であり、本文が優先します）:
-
-- **商業目的の利用**（事業での利用や営利目的の利用。会社など組織の内部での利用も含みます）には、PFN の公式登録ページへの事前登録が必要で、利用者またはその関係会社の直近事業年度の収入・売上が 10 億円以下であることが条件です（第 1 条、第 3 条）。超える場合は PFN から別途ライセンスを得る必要があります。個人的な利用や学術目的の利用は登録不要です。
-- 翻訳結果は、原則として PLaMo の生成物であることを明示せずに公表できます。ただし、書籍や論文など、独立した長文の公表物の全部または実質的な部分として公表する場合は、奥付・謝辞・末尾などに PLaMo を翻訳に使ったことを明示します（第 5 条第 2 項）。
-- 翻訳結果を、法律・医療・金融・人物評価などの重要な判断の唯一の根拠にしてはいけません（第 7 条第 2 項）。翻訳結果をモデルの学習に使うと、そのモデルにもこのライセンスが適用されます（第 5 条第 3 項）。
-- 18 歳以上であること、または親権者・法定代理人の同意が必要です（第 2 条）。
+モデルはこのリポジトリにも配布 ZIP にも含まれません。利用者が設定画面でライセンスに同意したうえで、PFN の Hugging Face から直接ダウンロードし、利用者自身が [PLaMo コミュニティライセンス契約](https://plamo.preferredai.jp/info/plamo-community-license-ja)（[English](https://plamo.preferredai.jp/info/plamo-community-license-en)）に従って使います。
 
 #### 同梱しているソフトウェア
 
@@ -377,12 +372,7 @@ An unofficial, independently developed app that uses the PLaMo 3 Translate model
 
 #### PLaMo 3 Translate model (PLaMo Community License)
 
-The model is neither in this repository nor in the ZIP. Users agree to the license in Settings, download the model directly from PFN's Hugging Face repositories, and use it under the [PLaMo Community License Agreement](https://plamo.preferredai.jp/info/plamo-community-license-en) ([日本語](https://plamo.preferredai.jp/info/plamo-community-license-ja)) themselves. As of November 23, 2026 the current version is "Established on February 25, 2025, revised on November 9, 2026 and November 17, 2026". Read the full text. Points that matter most to users (a summary; the license text prevails):
-
-- **Use for a COMMERCIAL PURPOSE** (use in business or for profit, including internal use within your organization) requires prior registration on PFN's official registration page, and the revenue or sales of you or your affiliates in the most recent fiscal year must not exceed 1 billion yen (Articles 1 and 3). Otherwise a separate commercial license from PFN is needed. Personal and academic use need no registration.
-- Translations can generally be published without marking them as PLaMo output. If a translation forms all or a substantial part of an independent long-form publication such as a book or paper, state that PLaMo was used for the translation in a reasonable place such as the colophon, acknowledgments or the end (Article 5, Paragraph 2).
-- Do not use translations as the sole evidence, evaluation or opinion for important decisions such as legal, medical, financial or personnel matters (Article 7, Paragraph 2). Models trained on the translations are subject to the license too (Article 5, Paragraph 3).
-- You must be 18 or older, or have the consent of a parent or legal guardian (Article 2).
+The model is neither in this repository nor in the ZIP. Users agree to the license in Settings, download the model directly from PFN's Hugging Face repositories, and use it under the [PLaMo Community License Agreement](https://plamo.preferredai.jp/info/plamo-community-license-en) ([日本語](https://plamo.preferredai.jp/info/plamo-community-license-ja)) themselves.
 
 #### Bundled software
 
