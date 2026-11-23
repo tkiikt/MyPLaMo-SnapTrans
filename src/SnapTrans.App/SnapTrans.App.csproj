@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>MyPLaMo.SnapTrans</AssemblyName>
+    <!-- FileDescription: the name Task Manager and "Open with" show for the process. -->
+    <AssemblyTitle>MyPLaMo SnapTrans</AssemblyTitle>
+    <RootNamespace>SnapTrans.App</RootNamespace>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WinUISDKReferences>false</WinUISDKReferences>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    <ApplicationIcon>Assets\SnapTrans.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" PrivateAssets="all" />
+    <ProjectReference Include="..\SnapTrans.Core\SnapTrans.Core.csproj" />
+    <ProjectReference Include="..\SnapTrans.Llama\SnapTrans.Llama.csproj" />
+    <ProjectReference Include="..\SnapTrans.Ocr.Windows\SnapTrans.Ocr.Windows.csproj" />
+    <ProjectReference Include="..\SnapTrans.Ocr.Tesseract\SnapTrans.Ocr.Tesseract.csproj" />
+    <Content Include="Assets\SnapTrans.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\SnapTrans-48.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\TrayLight.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\TrayDark.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\engine\**\*" Link="engine\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+  <!-- WinUI copies XBFs to build output, but the .NET publish pipeline also needs them (same as MyPLaMo). -->
+  <Target Name="PublishCompiledXaml" AfterTargets="ComputeFilesToPublish" DependsOnTargets="Prep_ComputeProcessXamlFiles">
+    <AssignTargetPath Files="@(GeneratedXamlSrc)" RootFolder="$(XamlGeneratedOutputPath)">
+      <Output TaskParameter="AssignedFiles" ItemName="_XamlPublishFiles" />
+    </AssignTargetPath>
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(_XamlPublishFiles)">
+        <RelativePath>%(_XamlPublishFiles.TargetPath)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+</Project>

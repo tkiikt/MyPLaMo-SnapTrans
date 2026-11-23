@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Small launcher placed at the top of the distribution ZIP (MyPLaMo-SnapTrans.exe).
+    It only starts app\MyPLaMo.SnapTrans.exe (the WinUI 3 app + self-contained runtime) and exits.
+    Native AOT: no .NET runtime needed, no console window. Built by packaging\package.ps1.
+    Version / Product / Copyright come from Directory.Build.props (package.ps1 passes -p:Version).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>MyPLaMo-SnapTrans</AssemblyName>
+    <RootNamespace>SnapTrans.Launcher</RootNamespace>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Platforms>x64</Platforms>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <StackTraceSupport>false</StackTraceSupport>
+    <DebugType>none</DebugType>
+    <ApplicationIcon>..\SnapTrans.App\Assets\SnapTrans.ico</ApplicationIcon>
+    <ApplicationManifest>launcher.manifest</ApplicationManifest>
+    <AssemblyTitle>MyPLaMo SnapTrans</AssemblyTitle>
+    <Description>MyPLaMo SnapTrans launcher</Description>
+  </PropertyGroup>
+
+</Project>

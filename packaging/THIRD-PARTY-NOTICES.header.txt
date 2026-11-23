@@ -1,0 +1,74 @@
+MyPLaMo SnapTrans {VERSION} - THIRD-PARTY NOTICES / 第三者ソフトウェアの告知
+==========================================================================
+
+[日本語]
+MyPLaMo SnapTrans の配布物（app フォルダー）には、次の第三者ソフトウェアが含まれています。
+各ソフトウェアはそれぞれのライセンスに従います。ライセンスの全文はこのファイルの後半にあります。
+
+翻訳モデル PLaMo 3 Translate（Preferred Networks）はこの配布物に含まれていません。利用者が設定画面で
+ライセンスに同意したうえで、PFN の Hugging Face リポジトリから直接ダウンロードします。モデルには
+PLaMo コミュニティライセンス契約（2025 年 2 月 25 日制定、2026 年 11 月 17 日改定が最新）が適用されます:
+  https://plamo.preferredai.jp/info/plamo-community-license-ja
+Built with PLaMo
+MyPLaMo SnapTrans は、株式会社 Preferred Networks が公開した翻訳モデル「PLaMo 3 Translate」を使用する、
+個人開発の非公式アプリです。株式会社 Preferred Networks による提供・推奨・提携はありません。
+
+同梱している Microsoft のコンポーネント（Windows App SDK、.NET、Visual C++ ランタイムなど）は、それぞれの
+Microsoft のライセンス条件に従います。MyPLaMo SnapTrans 本体の MIT License（LICENSE.txt）は、これらの
+コンポーネントの条件を変えるものではありません。
+
+設定画面から任意で取得するもの（配布物には含まれません）:
+- llama.cpp の CUDA 版と NVIDIA CUDA ランタイム（cudart / cuBLAS）: llama.cpp 公式リリース
+  （https://github.com/ggml-org/llama.cpp/releases）から取得します。CUDA ランタイムには
+  NVIDIA のライセンス（CUDA Toolkit EULA）が適用されます。
+- Tesseract の言語データ（eng / jpn、tessdata_fast 4.1.0、Apache License 2.0）:
+  https://github.com/tesseract-ocr/tessdata_fast
+
+[English]
+The MyPLaMo SnapTrans distribution (the app folder) includes the third-party software listed below.
+Each component is licensed under its own terms; the full license texts follow.
+
+The PLaMo 3 Translate model (Preferred Networks) is NOT included. Users download it directly from PFN's
+Hugging Face repositories in Settings after agreeing to its license, the PLaMo Community License
+Agreement (established on February 25, 2025; latest revision November 17, 2026):
+  https://plamo.preferredai.jp/info/plamo-community-license-en
+Built with PLaMo
+MyPLaMo SnapTrans is an unofficial, independently developed app that uses the PLaMo 3 Translate model
+released by Preferred Networks, Inc. It is not provided, endorsed, or affiliated with Preferred Networks, Inc.
+
+The bundled Microsoft components (Windows App SDK, .NET, Visual C++ runtime and others) are subject to
+their respective Microsoft license terms. The MIT License of MyPLaMo SnapTrans (LICENSE.txt) does not
+change the terms of those components.
+
+Optional downloads started from Settings (not included in the distribution):
+- llama.cpp CUDA build and the NVIDIA CUDA runtime (cudart / cuBLAS) from the official llama.cpp
+  releases (https://github.com/ggml-org/llama.cpp/releases). The CUDA runtime is subject to NVIDIA's
+  license (CUDA Toolkit EULA).
+- Tesseract language data (eng / jpn, tessdata_fast 4.1.0, Apache License 2.0):
+  https://github.com/tesseract-ocr/tessdata_fast
+
+Components / 同梱しているもの
+-----------------------------
+- llama.cpp b12121 (ggml-org) - MIT License
+    app\engine\cpu, app\engine\vulkan: llama-server.exe, llama.dll, llama-common.dll,
+    llama-server-impl.dll, mtmd.dll, ggml.dll, ggml-base.dll, ggml-cpu-*.dll, ggml-vulkan.dll
+    (llama.cpp also contains third-party code such as cpp-httplib and nlohmann/json under the MIT License;
+    see https://github.com/ggml-org/llama.cpp/tree/b12121/vendor)
+- LLVM OpenMP runtime - Apache License 2.0 with LLVM Exceptions
+    app\engine\*\libomp.dll
+- .NET runtime (Microsoft) - MIT License
+    app\System.*.dll, app\Microsoft.*.dll (from .NET), coreclr.dll, clrjit.dll, hostfxr.dll,
+    hostpolicy.dll, msquic.dll, createdump.exe and other files of the self-contained runtime
+- Windows App SDK (Microsoft) - Microsoft Software License Terms (Distributable Code)
+    app\Microsoft.UI.*, Microsoft.Windows.*, Microsoft.WinUI.dll, Microsoft.InteractiveExperiences.*,
+    WinRT.Runtime.dll, DWriteCore.dll, CoreMessagingXP.dll, MRM.dll, RestartAgent.exe, WinUIEdit.dll,
+    *.pri, *.winmd, the language folders (xx-XX\*.mui) and the other Windows App SDK runtime files
+- Windows App SDK ML / Windows AI components (Microsoft): Microsoft.ML.OnnxRuntime.dll, onnxruntime.dll,
+    DirectML.dll and related files, part of the Windows App SDK runtime (not used by this app)
+- Microsoft Edge WebView2 SDK (Microsoft): Microsoft.Web.WebView2.Core*.dll, WebView2Loader.dll
+    (part of the Windows App SDK runtime, not used by this app)
+- Tesseract .NET wrapper 5.2.0 (Charles Weld) - Apache License 2.0: app\Tesseract.dll
+- Tesseract OCR 5 - Apache License 2.0: app\x64\tesseract50.dll
+- Leptonica 1.82.0 - BSD 2-Clause style: app\x64\leptonica-1.82.0.dll, which statically includes
+    libtiff 4.4.0, libjpeg-turbo 2.1.4, libpng 1.6.37, GIFLIB and zlib 1.2.13
+    "This software is based in part on the work of the Independent JPEG Group."

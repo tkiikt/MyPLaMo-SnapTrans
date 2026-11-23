@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <!-- Release version for the app and the launcher. packaging\package.ps1 can override it with -Version. -->
+    <Version>1.0.0</Version>
+    <!-- Keep the file / product version plain ("1.0.0", not "1.0.0+<commit>"). -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Company>MyPLaMo SnapTrans</Company>
+    <Product>MyPLaMo SnapTrans</Product>
+    <Copyright>Copyright (c) 2026 MyPLaMo SnapTrans contributors</Copyright>
+  </PropertyGroup>
+</Project>

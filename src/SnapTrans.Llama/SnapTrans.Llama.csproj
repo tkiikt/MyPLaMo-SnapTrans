@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- llama.cpp llama-server child process + PLaMo 3 Translate (PFML3) translator. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SnapTrans.Core\SnapTrans.Core.csproj" />
+    <!-- SHA-256 of llama-server.exe and every DLL of the pinned llama.cpp release (cpu / vulkan / cuda). -->
+    <EmbeddedResource Include="engine-manifest.json" LogicalName="SnapTrans.Llama.engine-manifest.json" />
+  </ItemGroup>
+</Project>

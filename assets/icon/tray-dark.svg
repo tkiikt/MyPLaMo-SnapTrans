@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <title>SnapTrans tray – F, dark taskbar</title>
+  <defs><mask id="m"><rect width="16" height="16" fill="#fff"/><rect x="6" y="6.5" width="4" height="1.5" fill="#000"/></mask></defs>
+  <g fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="square">
+    <path d="M1.75 5V1.75H5"/><path d="M11 1.75H14.25V5"/><path d="M14.25 11V14.25H11"/><path d="M5 14.25H1.75V11"/>
+  </g>
+  <g fill="#4cc2ff" mask="url(#m)">
+    <rect x="4" y="4" width="8" height="6" rx="1.5"/>
+    <path d="M5 9V12.5L8.5 9.5Z"/>
+  </g>
+</svg>

@@ -1,0 +1,9 @@
+bin/
+obj/
+build/
+engine/
+release/
+publish/
+*.user
+.vs/
+dist/

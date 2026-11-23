@@ -1,0 +1,180 @@
+<Window x:Class="SnapTrans.App.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid x:Name="Root" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid x:Name="TitleBarArea" Height="40" Padding="16,0,0,0" ColumnSpacing="10">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <Image x:Name="TitleIcon" Width="18" Height="18" VerticalAlignment="Center" />
+            <TextBlock x:Name="WindowTitle" Grid.Column="1" FontSize="12" VerticalAlignment="Center" />
+        </Grid>
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="860" Padding="28,8,28,32" Spacing="14">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="HeaderTitle" Style="{StaticResource TitleTextBlockStyle}" />
+                        <TextBlock x:Name="HeaderSubtitle" Style="{StaticResource Note}" FontSize="13" />
+                    </StackPanel>
+                    <Border Grid.Column="1" VerticalAlignment="Top" CornerRadius="12" Padding="12,4" Background="{ThemeResource AccentFillColorDefaultBrush}">
+                        <TextBlock x:Name="BuiltWith" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="12" AutomationProperties.AutomationId="BuiltWithPlamo" />
+                    </Border>
+                </Grid>
+
+                <!-- Model -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="ModelTitle" Style="{StaticResource SectionTitle}" />
+                        <TextBlock x:Name="ModelDesc" Style="{StaticResource Note}" />
+                        <StackPanel x:Name="ModelRows" Spacing="8" />
+                        <StackPanel Spacing="4">
+                            <HyperlinkButton x:Name="LicenseLink" Click="License_Click" Padding="0" AutomationProperties.AutomationId="LicenseLink" />
+                            <CheckBox x:Name="LicenseCheck" Checked="License_Changed" Unchecked="License_Changed" AutomationProperties.AutomationId="LicenseCheck" />
+                        </StackPanel>
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock x:Name="FolderLabel" VerticalAlignment="Center" FontWeight="SemiBold" />
+                            <TextBlock x:Name="FolderText" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="FolderText" />
+                            <Button x:Name="FolderOpenButton" Grid.Column="2" Click="FolderOpen_Click" />
+                            <Button x:Name="FolderChangeButton" Grid.Column="3" Click="FolderChange_Click" AutomationProperties.AutomationId="FolderChangeButton" />
+                        </Grid>
+                        <TextBlock x:Name="FolderNote" Style="{StaticResource Note}" />
+                        <StackPanel x:Name="ModelBusyPanel" Orientation="Horizontal" Spacing="10" Visibility="Collapsed" AutomationProperties.AutomationId="ModelBusyPanel">
+                            <ProgressRing IsActive="True" Width="18" Height="18" />
+                            <TextBlock x:Name="ModelBusyText" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                        </StackPanel>
+                        <TextBlock x:Name="ModelStatus" Style="{StaticResource Note}" FontSize="13" AutomationProperties.AutomationId="ModelStatus" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Device -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="DeviceTitle" Style="{StaticResource SectionTitle}" />
+                        <TextBlock x:Name="DeviceDesc" Style="{StaticResource Note}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ComboBox x:Name="DeviceBox" MinWidth="360" SelectionChanged="Device_Changed" AutomationProperties.AutomationId="DeviceBox" />
+                            <Button x:Name="DeviceRefresh" Click="DeviceRefresh_Click" />
+                        </StackPanel>
+                        <TextBlock x:Name="DeviceFound" Style="{StaticResource Note}" />
+                        <StackPanel x:Name="EngineBusyPanel" Orientation="Horizontal" Spacing="10" Visibility="Collapsed" AutomationProperties.AutomationId="EngineBusyPanel">
+                            <ProgressRing IsActive="True" Width="18" Height="18" />
+                            <TextBlock x:Name="EngineBusyText" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                        </StackPanel>
+                        <TextBlock x:Name="DeviceCurrent" Style="{StaticResource Note}" FontSize="13" AutomationProperties.AutomationId="DeviceCurrent" />
+                        <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}" Margin="0,4" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock x:Name="CudaTitle" FontWeight="SemiBold" />
+                                <TextBlock x:Name="CudaDesc" Style="{StaticResource Note}" />
+                                <TextBlock x:Name="CudaState" Style="{StaticResource Note}" />
+                            </StackPanel>
+                            <Button x:Name="CudaButton" Grid.Column="1" VerticalAlignment="Center" Click="Cuda_Click" AutomationProperties.AutomationId="CudaButton" />
+                        </Grid>
+                        <ProgressBar x:Name="CudaProgress" Visibility="Collapsed" Maximum="1" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Shortcut -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="ShortcutTitle" Style="{StaticResource SectionTitle}" />
+                        <TextBlock x:Name="ShortcutDesc" Style="{StaticResource Note}" />
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <CheckBox x:Name="ModCtrl" Content="Ctrl" Click="Modifier_Click" MinWidth="0" />
+                            <CheckBox x:Name="ModAlt" Content="Alt" Click="Modifier_Click" MinWidth="0" />
+                            <CheckBox x:Name="ModShift" Content="Shift" Click="Modifier_Click" MinWidth="0" />
+                            <CheckBox x:Name="ModWin" Content="Win" Click="Modifier_Click" MinWidth="0" />
+                            <TextBlock x:Name="ShortcutPreview" VerticalAlignment="Center" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBlock x:Name="ShortcutWarning" Style="{StaticResource Note}" Foreground="{ThemeResource SystemFillColorCriticalBrush}" Visibility="Collapsed" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Translation + OCR -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="TranslationTitle" Style="{StaticResource SectionTitle}" />
+                        <ComboBox x:Name="TargetBox" MinWidth="300" SelectionChanged="Target_Changed" AutomationProperties.AutomationId="TargetBox" />
+                        <TextBlock x:Name="TargetDesc" Style="{StaticResource Note}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="OcrTitle" Style="{StaticResource SectionTitle}" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <ComboBox x:Name="OcrEngineBox" MinWidth="240" SelectionChanged="OcrEngine_Changed" AutomationProperties.AutomationId="OcrEngineBox" />
+                            <ComboBox x:Name="OcrLanguageBox" MinWidth="200" SelectionChanged="OcrLanguage_Changed" AutomationProperties.AutomationId="OcrLanguageBox" />
+                        </StackPanel>
+                        <TextBlock x:Name="OcrInstalled" Style="{StaticResource Note}" />
+                        <!-- How to improve recognition: the user adds the OCR language of the text they translate. SnapTrans only opens the page. -->
+                        <Grid x:Name="OcrAccuracyPanel" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBlock x:Name="OcrAccuracyText" Style="{StaticResource Note}" VerticalAlignment="Center" AutomationProperties.AutomationId="OcrAccuracyText" />
+                            <Button x:Name="OcrOpenSettingsButton" Grid.Column="1" VerticalAlignment="Center" Click="OcrOpenSettings_Click" AutomationProperties.AutomationId="OcrOpenSettingsButton" />
+                        </Grid>
+                        <StackPanel x:Name="OcrHelpPanel" Spacing="6" Visibility="Collapsed">
+                            <TextBlock x:Name="OcrHelp" Style="{StaticResource Note}" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                            <HyperlinkButton x:Name="OcrSettingsLink" NavigateUri="ms-settings:regionlanguage" Padding="0" />
+                        </StackPanel>
+                        <StackPanel x:Name="TessPanel" Orientation="Horizontal" Spacing="12" Visibility="Collapsed">
+                            <TextBlock x:Name="TessState" Style="{StaticResource Note}" VerticalAlignment="Center" />
+                            <Button x:Name="TessButton" Click="Tess_Click" AutomationProperties.AutomationId="TessButton" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Appearance -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="AppearanceTitle" Style="{StaticResource SectionTitle}" />
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <ComboBox x:Name="UiLanguageBox" MinWidth="240" SelectionChanged="UiLanguage_Changed" AutomationProperties.AutomationId="UiLanguageBox" />
+                            <ComboBox x:Name="ThemeBox" MinWidth="200" SelectionChanged="Theme_Changed" AutomationProperties.AutomationId="ThemeBox" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Last translation -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Name="LastTitle" Style="{StaticResource SectionTitle}" />
+                        <TextBlock x:Name="LastNone" Style="{StaticResource Note}" />
+                        <Grid x:Name="LastGrid" ColumnSpacing="16" RowSpacing="4" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock x:Name="LastSourceLabel" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button x:Name="LastSourceCopy" Style="{StaticResource PopupIconButton}" Click="LastSourceCopy_Click"><FontIcon Glyph="&#xE8C8;" FontSize="14" /></Button>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                <TextBlock x:Name="LastResultLabel" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button x:Name="LastResultCopy" Style="{StaticResource PopupIconButton}" Click="LastResultCopy_Click"><FontIcon Glyph="&#xE8C8;" FontSize="14" /></Button>
+                            </StackPanel>
+                            <TextBlock x:Name="LastSource" Grid.Row="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" MaxHeight="160" />
+                            <TextBlock x:Name="LastResult" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" MaxHeight="160" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- About -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Name="AboutTitle" Style="{StaticResource SectionTitle}" />
+                        <TextBlock x:Name="AboutBuilt" FontWeight="SemiBold" />
+                        <TextBlock x:Name="AboutText" Style="{StaticResource Note}" IsTextSelectionEnabled="True" />
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <HyperlinkButton x:Name="AboutLicense" Click="License_Click" Padding="0" AutomationProperties.AutomationId="AboutLicense" />
+                            <HyperlinkButton Content="llama.cpp" NavigateUri="https://github.com/ggml-org/llama.cpp" Padding="0" />
+                            <HyperlinkButton Content="Hugging Face: pfnet" NavigateUri="https://huggingface.co/pfnet" Padding="0" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

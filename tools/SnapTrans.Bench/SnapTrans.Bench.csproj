@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Developer CLI: model download, device listing, OCR comparison and translation timing. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SnapTrans.Core\SnapTrans.Core.csproj" />
+    <ProjectReference Include="..\..\src\SnapTrans.Llama\SnapTrans.Llama.csproj" />
+    <ProjectReference Include="..\..\src\SnapTrans.Ocr.Windows\SnapTrans.Ocr.Windows.csproj" />
+    <ProjectReference Include="..\..\src\SnapTrans.Ocr.Tesseract\SnapTrans.Ocr.Tesseract.csproj" />
+  </ItemGroup>
+</Project>
