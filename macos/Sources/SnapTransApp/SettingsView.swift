@@ -253,6 +253,9 @@ struct SettingsView: View {
                 modToggle("⇧ Shift", .shift)
                 modToggle("⌘ Command", .command)
             }
+            let conflicts = TapConflicts.others()
+            if !conflicts.isEmpty { Text(Loc.f("Tap_Conflict", conflicts.joined(separator: ", "))).font(.system(size: 12)).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true) }
+            Note(Loc.t("Shortcut_Remote"))
             if app.settings.modifiers.isEmpty { Text(Loc.t("Shortcut_Need")).font(.system(size: 12)).foregroundStyle(.orange) }
             Text(app.settings.enabled ? (app.tapInstalled ? Loc.t("Tap_Active") : Loc.t("Tap_Inactive")) : Loc.t("Tap_Disabled"))
                 .font(.system(size: 12)).foregroundStyle(app.tapInstalled || !app.settings.enabled ? Color.secondary : Color.orange)

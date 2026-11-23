@@ -111,3 +111,21 @@ final class SnapInput: @unchecked Sendable {
         }
     }
 }
+
+/// Other processes with an active (filtering) event tap on left mouse-down: they may consume a drag before SnapTrans.
+enum TapConflicts {
+    static func others() -> [String] {
+        var n: UInt32 = 0
+        guard CGGetEventTapList(0, nil, &n) == .success, n > 0 else { return [] }
+        var list = [CGEventTapInformation](repeating: CGEventTapInformation(), count: Int(n))
+        guard CGGetEventTapList(n, &list, &n) == .success else { return [] }
+        let me = ProcessInfo.processInfo.processIdentifier
+        var names: [String] = []
+        for t in list.prefix(Int(n)) where t.enabled && t.options != .listenOnly && t.tappingProcess != me
+            && t.eventsOfInterest & (1 << CGEventType.leftMouseDown.rawValue) != 0 {
+            let name = NSRunningApplication(processIdentifier: t.tappingProcess)?.localizedName ?? "pid \(t.tappingProcess)"
+            if !names.contains(name) { names.append(name) }
+        }
+        return names
+    }
+}

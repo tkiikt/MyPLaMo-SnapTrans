@@ -7,6 +7,7 @@ import SnapTransOCR
 /// Menu bar app: owns the status item, the drag selection, the OCR/translation engines and the windows.
 @MainActor
 final class AppController: ObservableObject {
+    static let showSettingsNotification = Notification.Name("io.github.tkiikt.MyPLaMo-SnapTrans.showSettings")
     static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
 
     @Published var settings: AppSettings { didSet { if settings != oldValue { settings.save() } } }
@@ -72,6 +73,9 @@ final class AppController: ObservableObject {
         if ProcessInfo.processInfo.environment["SNAPTRANS_OPEN_SETTINGS"] == "1" { openSettings() }
         AppLog.log("permissions: screen recording=\(screenGranted) accessibility=\(accessGranted) tap=\(tapInstalled)")
         DebugCommands.install(self)
+        DistributedNotificationCenter.default().addObserver(forName: Self.showSettingsNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.openSettings() }
+        }
         Task.detached(priority: .utility) {
             let t0 = Date()
             await VisionOCR.prewarm()

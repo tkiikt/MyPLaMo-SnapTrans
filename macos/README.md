@@ -52,6 +52,10 @@ copies `llama-server` and the 10 dylibs it links into `Contents/Helpers/engine` 
 | "Request" in Settings → macOS permissions | Accessibility, Screen & System Audio Recording | Once per signing identity. Granting Screen Recording takes effect after the app restarts. |
 | First capture after Screen Recording was granted (any path: Control + Option drag, Translate Area, shortcut) | "MyPLaMo SnapTrans is requesting to bypass the system private window picker and directly access your screen and audio" | Shown by macOS (15+) for every app that captures with ScreenCaptureKit without Apple's window picker. macOS asks again periodically (about monthly since macOS 15.1, as Apple has decided; an app cannot suppress it). The picker (SCContentSharingPicker) does not fit "drag a rectangle anywhere", so SnapTrans keeps direct capture. Audio is never captured (`capturesAudio = false`, `captureMicrophone = false`); the wording about audio is fixed by macOS. |
 
+Remote desktop: when the Mac is controlled from another computer, an app there (e.g. SnapTrans for Windows, which also
+uses Ctrl + Alt + drag) can take the same key + drag before it reaches the Mac. Settings says so, and warns when another
+app on the Mac has a filtering event tap on mouse clicks.
+
 SnapTrans does not read or write Desktop, Documents, Downloads or other protected folders: by default everything is in
 `~/Library/Application Support/MyPLaMo-SnapTrans` (settings, log, verification cache, models). A folder prompt appears
 only if the user picks such a folder as the model folder (macOS then asks once for that folder).
@@ -61,6 +65,7 @@ only if the user picks such a folder as the model folder (macOS then asks once f
 * `SNAPTRANS_PROFILE=<dir>` – settings, log and verification cache in another folder.
 * `SNAPTRANS_DEBUG_COMMANDS=1` – accept `snaptrans-cli debug <command>` (see `DebugCommands.swift`): `select x y w h`,
   `frame …`, `interactive`, `idrag …`, `scroll <section>`, `lang`, `theme`, `device`, `model`, `quit`.
+* `SNAPTRANS_ALLOW_MULTIPLE=1` – allow a second instance (normally a second launch opens the running one's Settings and quits).
 * `SNAPTRANS_SHOW_IN_CAPTURE=1` – make the selection frame visible to screenshots.
 * `SNAPTRANS_DEBUG_IMAGE=<png>` – use an image instead of the screen.
 * `SNAPTRANS_ENGINE_DIR`, `SNAPTRANS_GUARD` – run the CLI against `build/engine`.
