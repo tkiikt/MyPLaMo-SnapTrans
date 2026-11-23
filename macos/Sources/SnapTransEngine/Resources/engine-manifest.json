@@ -1,0 +1,16 @@
+{
+ "release": "llama.cpp b12121 (ggml-org/llama.cpp GitHub release llama-b12121-bin-macos-arm64.tar.gz, archive SHA-256 75e2176148b2d79ff20f503fa131f3d66d74176ed06c58f48e273e20383c32c2, laid out by macos/scripts/prepare-engine.sh)",
+ "files": {
+  "llama-server": "e7e3c60a5e612460d095bfd219047040d6bb9d0b56466aae30a480980b676959",
+  "libllama-server-impl.dylib": "124cb366e8c9e86b2bf75eb82ec2676b29db8b77c25e231e7d2b9025a8ad51e1",
+  "libllama-common.0.dylib": "70b557c14db123f77ecbb2fe4a830698606416639f77c880487a4391f60c206f",
+  "libmtmd.0.dylib": "ab5b1437830806ad66d09c182b6e08601d4a0fd3f4e7836ab23cf78f6d6fba71",
+  "libllama.0.dylib": "21f695b0d6650500f27daed849cd03ebf51cacd683ea569a7dfff8bd8bb69716",
+  "libggml.0.dylib": "f2b3b1a494448bb17a7bfe6111873326ba2872bdbc52a95c6f1140c6868261b8",
+  "libggml-cpu.0.dylib": "a81c23818a48fb10e306d082428ef5aac4b34077b3143a232b7c39641bb93abd",
+  "libggml-blas.0.dylib": "786754ac19bff80ad4ca76d44d3031f32593772f38d9da819b428dc702f63339",
+  "libggml-metal.0.dylib": "2b04ec59315ed3bd196ef119e20c2173c094b3cf206d8d0d4ca5b5caf685f8d9",
+  "libggml-rpc.0.dylib": "5e8345f15c9d156d84b35ab0bace85cbbdbc929ae3cb0fcb4a00874b00382d5c",
+  "libggml-base.0.dylib": "457c3072b5afc9026e5585b3c5fecea6f6ac21c7c85a507bd9f59a2f81ccf9f2"
+ }
+}
