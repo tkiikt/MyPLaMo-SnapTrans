@@ -1,4 +1,5 @@
 import AppKit
+import SnapTransCore
 
 /// Test-only remote control, active only when SNAPTRANS_DEBUG_COMMANDS=1 (never in normal use). Commands arrive as
 /// distributed notifications named "io.github.tkiikt.MyPLaMo-SnapTrans.debug" with the command in `object`, e.g.
@@ -14,9 +15,11 @@ enum DebugCommands {
     static var scrollRequest: ((String) -> Void)?
 
     static func install(_ app: AppController) {
-        guard ProcessInfo.processInfo.environment["SNAPTRANS_DEBUG_COMMANDS"] == "1" else { return }
+        // "1" listens on the base name; any other value listens on "<base>.<value>" only (several test instances).
+        guard let v = ProcessInfo.processInfo.environment["SNAPTRANS_DEBUG_COMMANDS"], !v.isEmpty else { return }
+        let listen = v == "1" ? name : Notification.Name(name.rawValue + "." + v)
         AppLog.log("debug commands enabled")
-        DistributedNotificationCenter.default().addObserver(forName: name, object: nil, queue: .main) { n in
+        DistributedNotificationCenter.default().addObserver(forName: listen, object: nil, queue: .main) { n in
             let cmd = (n.object as? String) ?? ""
             MainActor.assumeIsolated { run(cmd, app) }
         }
@@ -48,7 +51,7 @@ enum DebugCommands {
         case "lang" where p.count > 1: app.settings.language = p[1]; app.applyLanguage(); app.settingsWindow?.window.title = Loc.t("Settings_Title")
         case "theme" where p.count > 1: app.settings.theme = p[1]; app.applyTheme()
         case "device" where p.count > 1: Task { await app.applyEngineChange { app.settings.device = p[1] } }
-        case "model" where p.count > 1: Task { await app.applyEngineChange { app.settings.modelId = p[1] } }
+        case "model" where p.count > 1: if let m = ModelInfo.find(p[1]) { app.downloads.use(m) }
         default: AppLog.log("debug: unknown command")
         }
     }

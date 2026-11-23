@@ -61,7 +61,7 @@ do {
         print(String(format: "translate %.2f s\n%@", r.elapsed, r.text))
         await t.shutdown()
     case "debug":
-        DistributedNotificationCenter.default().postNotificationName(.init("io.github.tkiikt.MyPLaMo-SnapTrans.debug"),
+        DistributedNotificationCenter.default().postNotificationName(.init("io.github.tkiikt.MyPLaMo-SnapTrans.debug" + (ProcessInfo.processInfo.environment["SNAPTRANS_DEBUG_TARGET"].map { "." + $0 } ?? "")),
             object: a.dropFirst(2).joined(separator: " "), userInfo: nil, deliverImmediately: true)
     default: fail("see the header of Sources/snaptrans-cli/main.swift")
     }

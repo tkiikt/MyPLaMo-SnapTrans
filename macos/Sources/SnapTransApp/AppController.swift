@@ -251,7 +251,12 @@ final class AppController: ObservableObject {
                 popup.setError(Loc.t("NoText"), source: ""); AppLog.log("no text recognized"); return
             }
             guard let model = activeModel else {
-                let key = verifying.contains(settings.modelId) ? "Err_ModelVerifying" : "Err_NoModel"
+                // A selected file that has not been hashed yet (first use, or changed): verify it now, then try again.
+                if let m = ModelInfo.find(settings.modelId), store.state(of: m) == .unverified, !verifying.contains(m.id) {
+                    Task { await ensureVerified(preload: true) }
+                }
+                let key = verifying.contains(settings.modelId) || (ModelInfo.find(settings.modelId).map { store.state(of: $0) == .unverified } ?? false)
+                    ? "Err_ModelVerifying" : "Err_NoModel"
                 popup.setError(Loc.t(key), source: original)
                 if key == "Err_NoModel" { openSettings() }
                 return
