@@ -11,7 +11,7 @@ final class SnapInput: @unchecked Sendable {
     var onCancel: ((String) -> Void)?
 
     private let lock = NSLock()
-    private var _modifiers: CGEventFlags = [.maskControl, .maskAlternate]
+    private var _modifiers: CGEventFlags = [.maskControl, .maskShift]
     private var _enabled = true
     var modifiers: CGEventFlags { get { lock.withLock { _modifiers } } set { lock.withLock { _modifiers = newValue } } }
     var enabled: Bool { get { lock.withLock { _enabled } } set { lock.withLock { _enabled = newValue } } }

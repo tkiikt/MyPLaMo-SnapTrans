@@ -39,7 +39,7 @@ struct HotKeySpec: Codable, Hashable {
     var modifiers: SnapModifiers
     var keyLabel: String
     var display: String { modifiers.symbols + keyLabel }
-    static let `default` = HotKeySpec(keyCode: 17 /* kVK_ANSI_T */, modifiers: [.control, .option], keyLabel: "T")
+    static let `default` = HotKeySpec(keyCode: 17 /* kVK_ANSI_T */, modifiers: [.control, .shift], keyLabel: "T")
 }
 
 /// ~/Library/Application Support/MyPLaMo-SnapTrans/settings.json (or $SNAPTRANS_PROFILE). Not shared with MyPLaMo.
@@ -56,7 +56,8 @@ struct AppSettings: Codable, Equatable {
     var licenseAccepted = false
     /// "auto" (Metal, CPU fallback) or "cpu".
     var device = "auto"
-    var modifiers: SnapModifiers = [.control, .option]
+    /// Control + Shift: Control + Option is VoiceOver's key and the default of other tools (e.g. Genspark Speakly).
+    var modifiers: SnapModifiers = [.control, .shift]
     var hotKey: HotKeySpec? = .default
     /// "auto" (Japanese ⇄ English) or a TranslationLanguage id.
     var target = "auto"

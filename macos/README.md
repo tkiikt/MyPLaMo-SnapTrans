@@ -1,6 +1,6 @@
 # MyPLaMo SnapTrans for macOS
 
-Menu bar version of MyPLaMo SnapTrans: hold **Control + Option** and drag around text anywhere on screen; the area is
+Menu bar version of MyPLaMo SnapTrans: hold **Control + Shift** and drag around text anywhere on screen; the area is
 read with Apple Vision and translated locally by PLaMo 3 Translate (llama.cpp). Same models, catalog, prompt format,
 download/verification rules and popup design as the Windows build in `../src`.
 
@@ -50,16 +50,19 @@ copies `llama-server` and the 10 dylibs it links into `Contents/Helpers/engine` 
 | When | Dialog | Why / how often |
 | --- | --- | --- |
 | "Request" in Settings → macOS permissions | Accessibility, Screen & System Audio Recording | Once per signing identity. Granting Screen Recording takes effect after the app restarts. |
-| First capture after Screen Recording was granted (any path: Control + Option drag, Translate Area, shortcut) | "MyPLaMo SnapTrans is requesting to bypass the system private window picker and directly access your screen and audio" | Shown by macOS (15+) for every app that captures with ScreenCaptureKit without Apple's window picker. macOS asks again periodically (about monthly since macOS 15.1, as Apple has decided; an app cannot suppress it). The picker (SCContentSharingPicker) does not fit "drag a rectangle anywhere", so SnapTrans keeps direct capture. Audio is never captured (`capturesAudio = false`, `captureMicrophone = false`); the wording about audio is fixed by macOS. |
+| First capture after Screen Recording was granted (any path: Control + Shift drag, Translate Area, shortcut) | "MyPLaMo SnapTrans is requesting to bypass the system private window picker and directly access your screen and audio" | Shown by macOS (15+) for every app that captures with ScreenCaptureKit without Apple's window picker. macOS asks again periodically (about monthly since macOS 15.1, as Apple has decided; an app cannot suppress it). The picker (SCContentSharingPicker) does not fit "drag a rectangle anywhere", so SnapTrans keeps direct capture. Audio is never captured (`capturesAudio = false`, `captureMicrophone = false`); the wording about audio is fixed by macOS. |
 
-リモート操作の注意: Windows から Mac をリモート操作しているときは、Windows 版 SnapTrans の Ctrl + Alt + ドラッグと
-Mac 版の Control + Option + ドラッグが重なり、手元の Windows 側が先に受け取ってしまいます。どちらかのアプリの設定で
-ショートカットを変えてください（Mac 版の既定は Control + Option のままです）。
+ショートカット: 既定は Control + Shift + ドラッグ、範囲選択の開始は Control + Shift + T。Control + Option は VoiceOver の
+キーで、Genspark Speakly の「スクリーンアシスタント」の既定（押したままで発動）とも重なるため既定にしていません。Windows 版の
+Ctrl + Alt + ドラッグとも重ならないので、Windows から Mac をリモート操作しても両方を使えます（ただしリモートデスクトップ側の
+キー割り当てによっては Ctrl が Command に変換されることがあります）。ほかのアプリとぶつかるときは設定画面の「ショートカット」で
+変えられます。
 
-Remote control: if you control the Mac remotely from Windows, Control + Option + drag on the Mac clashes with
-Ctrl + Alt + drag in SnapTrans for Windows, and the Windows side receives it first. Change the shortcut in one of the
-two apps (the Mac default stays Control + Option). Settings also warns when another app on the Mac has a filtering
-event tap on mouse clicks.
+Shortcuts: Control + Shift + drag by default, and Control + Shift + T starts area selection. Control + Option is not the
+default because it is VoiceOver's key and the default hold-to-trigger shortcut of Genspark Speakly's screen assistant.
+It also no longer overlaps Ctrl + Alt + drag in SnapTrans for Windows, so both work when you control the Mac from Windows
+(some remote desktop setups map Ctrl to Command, though). If another app uses the same keys, change them in
+Settings → Shortcut; Settings also warns when another app on the Mac has a filtering event tap on mouse clicks.
 
 SnapTrans does not read or write Desktop, Documents, Downloads or other protected folders: by default everything is in
 `~/Library/Application Support/MyPLaMo-SnapTrans` (settings, log, verification cache, models). A folder prompt appears

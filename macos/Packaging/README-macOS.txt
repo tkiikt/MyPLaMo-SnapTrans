@@ -27,18 +27,17 @@ Built with PLaMo
    翻訳モデルを「ダウンロード」します（まずは 0.8B か 2B）。モデルは PFN の Hugging Face から直接取得します。
 4. 許可（設定画面の「macOS の許可」で状態を確認できます）:
    - 画面収録: 選んだ範囲の文字を読むために必要です。
-   - アクセシビリティ: Control + Option を押しながらのドラッグを受け取るために必要です。
+   - アクセシビリティ: Control + Shift を押しながらのドラッグを受け取るために必要です。
    許可はシステム設定 →「プライバシーとセキュリティ」で行います。変更が反映されないときはアプリを再起動します。
    画面収録を許可した後の最初の翻訳で、macOS が「システムプライベートウインドウピッカーをバイパスして画面と
    オーディオに直接アクセスすることが要求されています」と確認します。「許可」で続きます。macOS の仕様で、
    この確認はおおむね毎月出ます（アプリからは止められません）。音声は取得しません。
-5. Control + Option を押しながら、画面上の文字を左ドラッグで囲みます。離すと翻訳がポップアップで表示されます。
+5. Control + Shift を押しながら、画面上の文字を左ドラッグで囲みます。離すと翻訳がポップアップで表示されます。
    - ドラッグ中に Esc でキャンセル。ポップアップは × か Esc で閉じます。ポップアップはドラッグで動かせます。
    - ポップアップのボタン: 原文⇄訳文の切り替え、コピー。
-   - アクセシビリティを許可しない場合も、メニューの「範囲を翻訳」か Control + Option + T で範囲を選べます。
-   - Windows から Mac をリモート操作しているときは、Windows 版 SnapTrans の Ctrl + Alt + ドラッグと
-     重なり、手元の Windows 側が先に受け取ってしまいます。どちらかのアプリの設定でショートカットを
-     変えてください（Mac 版は設定画面の「ショートカット」で変更できます）。
+   - アクセシビリティを許可しない場合も、メニューの「範囲を翻訳」か Control + Shift + T で範囲を選べます。
+   - ほかのアプリとキーの組み合わせがぶつかるときは、設定画面の「ショートカット」で変えられます。
+     （Control + Option は VoiceOver や一部の音声入力アプリが使うため、既定にしていません。）
 6. メニューバーのアイコン: クリックで設定、右クリックで「範囲を翻訳 / 最後の翻訳を表示 /
    ドラッグ翻訳を有効にする / 設定を開く / 終了」。
 
@@ -76,15 +75,14 @@ Built with PLaMo
 2. Settings opens on first launch: read and accept the PLaMo Community License, then download a model
    (0.8B or 2B to start). Models come directly from PFN's Hugging Face repositories.
 3. Permissions (status in Settings → macOS permissions): Screen Recording (to read the selected area) and
-   Accessibility (to receive Control + Option + drag). Grant them in System Settings → Privacy & Security; restart
+   Accessibility (to receive Control + Shift + drag). Grant them in System Settings → Privacy & Security; restart
    the app if a change does not take effect. On the first translation after that, macOS asks whether the app may
    "bypass the system private window picker and directly access your screen and audio"; choose Allow. macOS repeats
    this about once a month (the app cannot turn it off). No audio is ever captured.
-4. Hold Control + Option and left-drag around text. Esc cancels; × or Esc closes the card; drag the card to move it.
-   Without Accessibility, use "Translate Area" in the menu or Control + Option + T.
-   If you control this Mac remotely from Windows, the drag clashes with Ctrl + Alt + drag in SnapTrans for Windows,
-   and the Windows side receives it first. Change the shortcut in one of the two apps (on the Mac: Settings →
-   Shortcut).
+4. Hold Control + Shift and left-drag around text. Esc cancels; × or Esc closes the card; drag the card to move it.
+   Without Accessibility, use "Translate Area" in the menu or Control + Shift + T.
+   If another app uses the same keys, change them in Settings → Shortcut. (Control + Option is not the default
+   because VoiceOver and some dictation apps use it.)
 
 * Data: settings, log and verification results in ~/Library/Application Support/MyPLaMo-SnapTrans; models in the
   folder chosen in Settings. To uninstall, quit from the menu, delete the app and that folder, and remove the app

@@ -124,7 +124,7 @@ enum Loc {
         "Shortcut_Need": ("キーを 1 つ以上選んでください。", "Select at least one key."),
         "Shortcut_Enabled": ("ドラッグ翻訳を有効にする", "Enable drag-to-translate"),
         "Tap_Conflict": ("ほかのアプリ（%@）もマウス操作を横取りできる状態です。同じキーの組み合わせを使っている場合は、ここで別の組み合わせにしてください。", "Another app (%@) can also intercept mouse input. If it uses the same keys, choose a different combination here."),
-        "Shortcut_Remote": ("リモートデスクトップで操作しているときは、手元の PC のアプリ（Windows 版 SnapTrans など）が同じキー操作を先に受け取ることがあります。", "When you control this Mac over remote desktop, an app on the local computer (e.g. SnapTrans for Windows) may receive the same keys first."),
+        "Shortcut_Remote": ("ほかのアプリ（音声入力やスクリーンショットのツールなど）と組み合わせがぶつかるときは、ここで変更できます。リモートデスクトップで操作しているときは、手元の PC のアプリが同じキー操作を先に受け取ることがあります。", "If another app (e.g. a dictation or screenshot tool) uses the same combination, change it here. Over remote desktop, an app on the local computer may receive the same keys first."),
         "Hotkey": ("「範囲を翻訳」のショートカット", "\"Translate Area\" shortcut"),
         "Hotkey_Desc": ("押すと範囲選択モードになります（ドラッグ操作の許可がなくても使えます）。メニューバーのアイコンを右クリックして「範囲を翻訳」を選んでも同じです。", "Starts area selection (works without the drag permission). The same as right-clicking the menu bar icon and choosing Translate Area."),
         "Hotkey_Record": ("変更…", "Change…"),
