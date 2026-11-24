@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import SnapTransCore
 
 #if SNAPTRANS_TEST_HOOKS
@@ -9,6 +10,7 @@ import SnapTransCore
 ///   frame <x> <y> <w> <h>    show the passive selection frame over that rectangle (for screenshots); "frame off" hides it
 ///   idrag <x1> <y1> <x2> <y2> feed a drag into the interactive overlay (after "interactive"); "cancel-select" = Esc
 ///   interactive | last | menu | settings | quit
+///   snapshot <png-path>      render the Startup card off screen to a PNG (works with the screen locked)
 ///   login <on|off> | login-status   register/unregister the login item (SMAppService.mainApp), log its status
 ///   scroll <section-id>      scroll Settings (model, device, shortcut, permissions, translation, ocr, appearance, startup, last, about)
 ///   lang <auto|ja-JP|en-US> | theme <system|light|dark> | device <auto|cpu> | model <id>
@@ -26,6 +28,27 @@ enum DebugCommands {
             let cmd = (n.object as? String) ?? ""
             MainActor.assumeIsolated { run(cmd, app) }
         }
+    }
+
+    /// Renders the Startup card (as in Settings, current language and theme) off screen to a PNG: works while the
+    /// screen is locked and shows nothing else from the window.
+    static func snapshot(_ app: AppController, to path: String) {
+        let card = SettingsView(app: app, downloads: app.downloads).startupCard
+            .padding(24).frame(width: 720).background(Color(nsColor: .windowBackgroundColor))
+            .environment(\.locale, Locale(identifier: Loc.current))
+        let host = NSHostingView(rootView: card)
+        host.frame.size = host.fittingSize
+        let window = NSWindow(contentRect: NSRect(origin: NSPoint(x: -10_000, y: -10_000), size: host.frame.size),
+                              styleMask: .borderless, backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        host.layoutSubtreeIfNeeded()
+        host.display()
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { AppLog.log("snapshot: failed"); return }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        let ok = (try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))) != nil
+        AppLog.log("snapshot: \(ok ? "written" : "failed") \(rep.pixelsWide)x\(rep.pixelsHigh)")
+        window.close()
     }
 
     static func run(_ cmd: String, _ app: AppController) {
@@ -48,6 +71,7 @@ enum DebugCommands {
         case "menu": app.statusItem?.showMenu()
         case "settings": app.openSettings()
         case "login" where p.count > 1: app.setLoginItem(p[1] == "on")
+        case "snapshot" where p.count > 1: snapshot(app, to: p[1])
         case "login-status": app.refreshLoginItem(); AppLog.log("login item status: \(app.loginItem)")
         case "close-settings": app.settingsWindow?.window.orderOut(nil)
         case "hide-popup": app.popup.hide()
