@@ -5,16 +5,20 @@ import SnapTransCore
 /// Captures a CG-global rectangle with ScreenCaptureKit at the display's native resolution. SnapTrans' own windows
 /// (selection frame, result popup) are excluded; the Settings window is kept so it can be translated like any other.
 enum ScreenCapture {
-    /// Test hook: use this image instead of the screen (lets the pipeline run without Screen Recording).
+    #if SNAPTRANS_TEST_HOOKS
+    /// Test hook (test builds only): use this image instead of the screen (lets the pipeline run without Screen Recording).
     static var debugImage: CGImage? {
         guard let p = ProcessInfo.processInfo.environment["SNAPTRANS_DEBUG_IMAGE"],
               let src = CGImageSourceCreateWithURL(URL(fileURLWithPath: p) as CFURL, nil) else { return nil }
         return CGImageSourceCreateImageAtIndex(src, 0, nil)
     }
+    #endif
 
     @MainActor
     static func capture(_ rect: CGRect, keepWindows: [NSWindow]) async throws -> CGImage {
+        #if SNAPTRANS_TEST_HOOKS
         if let img = debugImage { return img }
+        #endif
         // Never trigger the system prompt from a drag: explain first (Settings → macOS permissions) and let the user ask.
         guard Permissions.screenRecording else { throw SnapTransError("CaptureDenied") }
         guard let screen = Geometry.screen(forCG: rect) else { throw SnapTransError("CaptureFailed") }

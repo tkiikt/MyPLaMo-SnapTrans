@@ -16,46 +16,54 @@ public struct LoadedEngine: Sendable {
 }
 
 /// Where the bundled engine lives: <App>.app/Contents/Helpers/engine (llama-server + dylibs) and the guard in
-/// Contents/Helpers. SNAPTRANS_ENGINE_DIR / SNAPTRANS_GUARD override them for development.
+/// Contents/Helpers. Test builds (SNAPTRANS_TEST_HOOKS) also accept SNAPTRANS_ENGINE_DIR / SNAPTRANS_GUARD overrides.
 public struct EngineLocator: Sendable {
     public let engineFolder: String
     public let guardPath: String
     public init(engineFolder: String, guardPath: String) { self.engineFolder = engineFolder; self.guardPath = guardPath }
 
     public static func bundled() -> EngineLocator {
-        let env = ProcessInfo.processInfo.environment
         let helpers = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers").path
+        var engine = (helpers as NSString).appendingPathComponent("engine")
+        var guardPath = (helpers as NSString).appendingPathComponent("snaptrans-engine-guard")
+        #if SNAPTRANS_TEST_HOOKS
+        let env = ProcessInfo.processInfo.environment
         let exeDir = (Bundle.main.executablePath.map { ($0 as NSString).deletingLastPathComponent }) ?? helpers
-        let engine = env["SNAPTRANS_ENGINE_DIR"] ?? (helpers as NSString).appendingPathComponent("engine")
-        var guardPath = env["SNAPTRANS_GUARD"] ?? (helpers as NSString).appendingPathComponent("snaptrans-engine-guard")
+        if let e = env["SNAPTRANS_ENGINE_DIR"] { engine = e }
+        if let g = env["SNAPTRANS_GUARD"] { guardPath = g }
         if !FileManager.default.isExecutableFile(atPath: guardPath) { guardPath = (exeDir as NSString).appendingPathComponent("snaptrans-engine-guard") }
+        #endif
         return EngineLocator(engineFolder: engine, guardPath: guardPath)
     }
 
     public var serverPath: String { (engineFolder as NSString).appendingPathComponent("llama-server") }
 }
 
-/// One llama-server child process bound to 127.0.0.1 on a random port with a random API key (passed through the
-/// environment, never the command line). It runs under snaptrans-engine-guard so it never outlives the app.
-/// Nothing is sent until 127.0.0.1:port is proven to be our child. Not thread-safe: PlamoTranslator serializes access.
+/// The model file handed to the engine: a verified, owner-only copy (see ModelStore.pinnedModel).
+public typealias ModelPreparer = @Sendable (_ privateFolder: String) throws -> PinnedModel
+
+/// One llama-server child process listening on a Unix domain socket in a fresh owner-only (0700) folder, with a random
+/// API key (passed through the environment, never the command line). It runs under snaptrans-engine-guard so it never
+/// outlives the app. Every request connects anew and checks that the peer of that connection is the tracked child
+/// (PID + start time) before the key or any text is written. Not thread-safe: PlamoTranslator serializes access.
 public final class LlamaServer: @unchecked Sendable {
     let locator: EngineLocator
     var guardProcess: Process?
-    var serverPid: pid_t = 0
-    var session: URLSession?
+    var server: ProcessIdentity?
+    var runFolder: String?
+    var socketPath = ""
     var apiKey = ""
-    var port = 0
+    var pinned: PinnedModel?
     let stderrState = StderrState()
     public private(set) var loaded: LoadedEngine?
     public var diagnostic: (@Sendable (String) -> Void)?
 
     static let healthTimeout: TimeInterval = 3
     static let completionTimeout: TimeInterval = 120
-    static let portAttempts = 4
 
     public init(locator: EngineLocator) { self.locator = locator }
 
-    public var isRunning: Bool { guardProcess?.isRunning == true && serverPid > 0 && kill(serverPid, 0) == 0 }
+    public var isRunning: Bool { guardProcess?.isRunning == true && server?.isAlive == true }
 
     final class StderrState: @unchecked Sendable {
         let lock = NSLock()
@@ -83,34 +91,37 @@ public final class LlamaServer: @unchecked Sendable {
             if g.isRunning { g.terminate(); g.waitUntilExit() }
             guardProcess = nil
         }
-        if serverPid > 0, kill(serverPid, 0) == 0, PortOwner.parent(of: serverPid) == 1 { kill(serverPid, SIGKILL) }
-        serverPid = 0
-        session?.invalidateAndCancel(); session = nil
-        apiKey = ""; port = 0
+        // Only the tracked child itself (same PID *and* start time, now orphaned) is ever killed here.
+        if let s = server, s.isAlive, PortOwner.parent(of: s.pid) == 1 { kill(s.pid, SIGKILL) }
+        server = nil
+        pinned = nil
+        if let dir = runFolder { try? FileManager.default.removeItem(atPath: dir) }
+        runFolder = nil
+        socketPath = ""; apiKey = ""
     }
 
     /// - Parameter selection: "auto" (Metal, CPU fallback), "metal" or "cpu".
-    public func load(modelPath: String, selection: String, guardModel: (() throws -> Void)?) async throws -> LoadedEngine {
+    public func load(modelPath: String, selection: String, prepare: ModelPreparer?) async throws -> LoadedEngine {
         if let current = loaded, current.modelPath == modelPath, current.selection == selection, isRunning { return current }
         stop()
         do {
-            try guardModel?()
-            try EngineIntegrity.verify(folder: locator.engineFolder)
+            try EngineIntegrity.verify(folder: locator.engineFolder, guardPath: locator.guardPath)
             let t0 = Date()
             var reason: String?
             if selection != "cpu" {
                 do {
-                    try await start(modelPath: modelPath, backend: .metal)
+                    try await start(modelPath: modelPath, backend: .metal, prepare: prepare)
                     let l = LoadedEngine(modelPath: modelPath, selection: selection, backend: .metal, fallbackReason: nil, loadTime: Date().timeIntervalSince(t0))
                     loaded = l; return l
                 } catch let e as SnapTransError {
                     if Task.isCancelled { throw CancellationError() }
+                    if e.code == "ExistingHashMismatch" || e.code == "EngineTampered" || e.code == "ModelMissing" { throw e }
                     reason = e.code + (e.args.isEmpty ? "" : ": " + e.args.joined(separator: " "))
-                    diagnostic?("Metal load failed: \(reason!); falling back to CPU")
+                    diagnostic?("Metal load failed: \(e.safeDescription); falling back to CPU")
                     stopProcess()
                 }
             }
-            try await start(modelPath: modelPath, backend: .cpu)
+            try await start(modelPath: modelPath, backend: .cpu, prepare: prepare)
             let l = LoadedEngine(modelPath: modelPath, selection: selection, backend: .cpu, fallbackReason: reason, loadTime: Date().timeIntervalSince(t0))
             loaded = l; return l
         } catch {
@@ -119,67 +130,80 @@ public final class LlamaServer: @unchecked Sendable {
         }
     }
 
-    func start(modelPath: String, backend: ComputeBackend) async throws {
-        // A free port can be taken by another process between probing and llama-server's bind: retry with a new port.
-        var attempt = 1
-        while true {
-            let p = try Self.freeLoopbackPort()
-            do {
-                try await start(modelPath: modelPath, backend: backend, port: p)
-                if attempt > 1 { diagnostic?("llama-server started on port \(p) (attempt \(attempt))") }
-                return
-            } catch let e as SnapTransError where e.code == "PortInUse" && attempt < Self.portAttempts {
-                diagnostic?("port \(p) unavailable, retrying with a new port")
-                stopProcess()
-                attempt += 1
-            }
-        }
-    }
-
-    static func freeLoopbackPort() throws -> Int {
-        let fd = socket(AF_INET, SOCK_STREAM, 0)
-        guard fd >= 0 else { throw SnapTransError("PortInUse", 0, "socket") }
-        defer { close(fd) }
-        var addr = sockaddr_in()
-        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
-        addr.sin_family = sa_family_t(AF_INET)
-        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
-        addr.sin_port = 0
-        var len = socklen_t(MemoryLayout<sockaddr_in>.size)
-        let ok = withUnsafeMutablePointer(to: &addr) { ptr in
-            ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, len) == 0 && getsockname(fd, $0, &len) == 0 }
-        }
-        guard ok else { throw SnapTransError("PortInUse", 0, "bind") }
-        return Int(UInt16(bigEndian: addr.sin_port))
-    }
-
-    static func randomKey() -> String {
+    /// 32 hex characters from the system CSPRNG; startup is aborted if it fails.
+    static func randomKey() throws -> String {
         var bytes = [UInt8](repeating: 0, count: 16)
-        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else { throw SnapTransError("EngineExited", 0, "random") }
         return bytes.map { String(format: "%02x", $0) }.joined()
     }
 
-    func start(modelPath: String, backend: ComputeBackend, port p: Int) async throws {
-        let token = Self.randomKey()
+    /// A fresh owner-only folder for the socket and the pinned model (mkdtemp creates it as 0700) in the per-user
+    /// temporary folder, which is itself private to this user.
+    static func makeRunFolder() throws -> String {
+        removeStaleRunFolders()
+        let base = (NSTemporaryDirectory() as NSString).appendingPathComponent("snaptrans.XXXXXX")
+        var template = Array(base.utf8CString)
+        guard let p = template.withUnsafeMutableBufferPointer({ mkdtemp($0.baseAddress!) }) else { throw SnapTransError("EngineExited", 0, "run folder") }
+        let dir = String(cString: p)
+        var st = stat()
+        guard lstat(dir, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR, st.st_uid == getuid(), (st.st_mode & 0o077) == 0 else {
+            throw SnapTransError("EngineExited", 0, "run folder")
+        }
+        // Owner record, so a later start can remove the folder if this process dies without cleaning up.
+        try? PrivateFiles.write(Data("\(getpid()) \(ProcessIdentity.of(getpid())?.startSec ?? 0)".utf8), to: URL(fileURLWithPath: dir).appendingPathComponent("owner"))
+        return dir
+    }
+
+    /// Removes run folders (socket + model copy) left behind by a SnapTrans process that no longer runs (crash, kill).
+    static func removeStaleRunFolders() {
+        let tmp = NSTemporaryDirectory()
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: tmp) else { return }
+        for n in names where n.hasPrefix("snaptrans.") && n.count == "snaptrans.XXXXXX".count {
+            let dir = (tmp as NSString).appendingPathComponent(n)
+            var st = stat()
+            guard lstat(dir, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR, st.st_uid == getuid() else { continue }
+            let owner = (try? String(contentsOfFile: (dir as NSString).appendingPathComponent("owner"), encoding: .utf8))?.split(separator: " ")
+            if let o = owner, o.count == 2, let pid = pid_t(o[0]), let start = UInt64(o[1]),
+               let ident = ProcessIdentity.of(pid), ident.startSec == start { continue }   // its process still runs
+            if owner == nil, Date().timeIntervalSince1970 - Double(st.st_mtimespec.tv_sec) < 3600 { continue }   // being created
+            try? FileManager.default.removeItem(atPath: dir)
+        }
+    }
+
+    func start(modelPath: String, backend: ComputeBackend, prepare: ModelPreparer?) async throws {
+        let token = try Self.randomKey()
+        let dir = try Self.makeRunFolder()
+        runFolder = dir
+        let sock = (dir as NSString).appendingPathComponent("engine.sock")
+        // The model is checked again right here and the engine gets the verified owner-only copy.
+        let pin = try prepare?(dir)
+        pinned = pin
         var args = [String(getpid()), locator.serverPath,
-                    "-m", modelPath, "-c", "4096", "-np", "1", "--host", "127.0.0.1", "--port", String(p),
-                    "--no-webui", "--offline", "--verbosity", "4"]
+                    "-m", pin?.path ?? modelPath, "-c", "4096", "-np", "1", "--host", sock,
+                    "--no-webui", "--offline", "--no-mmproj", "--no-slots", "--cache-ram", "0", "--no-cache-prompt",
+                    // 4: the "offloaded N/M layers" line (Metal check) is a debug-level message. stderr is only
+                    // scanned in memory for fixed conditions and never stored.
+                    "--verbosity", "4"]
         args += backend == .metal ? ["--device", "MTL0", "-ngl", "999"] : ["--device", "none", "-ngl", "0", "--no-op-offload"]
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: locator.guardPath)
         proc.arguments = args
-        // The key goes through the environment, not the command line (which other processes can read).
+        // The key goes through the environment, not the command line (which other processes can read). Nothing else
+        // is inherited (no LLAMA_ARG_* from the user's environment).
         var env = ["LLAMA_API_KEY": token, "PATH": "/usr/bin:/bin"]
         if let home = ProcessInfo.processInfo.environment["HOME"] { env["HOME"] = home }
         proc.environment = env
-        proc.currentDirectoryURL = URL(fileURLWithPath: locator.engineFolder)
+        proc.currentDirectoryURL = URL(fileURLWithPath: dir)
         let out = Pipe(), err = Pipe()
         proc.standardOutput = out; proc.standardError = err; proc.standardInput = FileHandle.nullDevice
         stderrState.reset()
         let state = stderrState
-        let diag = diagnostic
+        #if SNAPTRANS_TEST_HOOKS
+        let rawLog = ProcessInfo.processInfo.environment["SNAPTRANS_ENGINE_LOG"] == "1" ? diagnostic : nil
+        #endif
         final class Buffer: @unchecked Sendable { var data = Data() }
         let pending = Buffer()
+        // stderr is only scanned in memory for a few fixed conditions; it is never stored (test builds can opt in).
         err.fileHandleForReading.readabilityHandler = { h in
             let d = h.availableData
             if d.isEmpty { h.readabilityHandler = nil; return }
@@ -188,7 +212,9 @@ public final class LlamaServer: @unchecked Sendable {
                 let line = String(decoding: pending.data[pending.data.startIndex..<nl], as: UTF8.self)
                 pending.data.removeSubrange(pending.data.startIndex...nl)
                 state.scan(Substring(line))
-                if ProcessInfo.processInfo.environment["SNAPTRANS_ENGINE_LOG"] == "1" { diag?("llama: " + line) }
+                #if SNAPTRANS_TEST_HOOKS
+                rawLog?("llama: " + line)
+                #endif
             }
         }
         try proc.run()
@@ -196,57 +222,45 @@ public final class LlamaServer: @unchecked Sendable {
         // The guard prints "pid <n>" once llama-server is spawned.
         let pidLine = try await Self.readLine(out.fileHandleForReading, timeout: 10)
         guard pidLine.hasPrefix("pid "), let pid = pid_t(pidLine.dropFirst(4)) else { throw SnapTransError("EngineExited", proc.isRunning ? -1 : Int(proc.terminationStatus), "guard") }
-        serverPid = pid
+        // Our child: spawned by our guard from the verified executable. Remember it by PID + start time.
+        guard let ident = ProcessIdentity.of(pid), PortOwner.parent(of: pid) == proc.processIdentifier,
+              let exe = PortOwner.executablePath(of: pid),
+              URL(fileURLWithPath: exe).resolvingSymlinksInPath().path == URL(fileURLWithPath: locator.serverPath).resolvingSymlinksInPath().path
+        else { throw SnapTransError("EngineUnexpectedResponse", "pid") }
+        server = ident
+        socketPath = sock
 
-        let config = URLSessionConfiguration.ephemeral
-        config.connectionProxyDictionary = [:]   // never through a proxy
-        config.timeoutIntervalForRequest = Self.completionTimeout
-        config.httpShouldSetCookies = false
-        let s = URLSession(configuration: config, delegate: NoRedirect(), delegateQueue: nil)
-        session = s
-        let base = URL(string: "http://127.0.0.1:\(p)")!
         let t0 = Date()
-        var checkedOthers = false
         while true {
             try Task.checkCancellation()
-            let (offloaded, bindFailed, cause) = stderrState.snapshot
-            if !proc.isRunning || kill(pid, 0) != 0 {
+            let (_, bindFailed, cause) = stderrState.snapshot
+            if !proc.isRunning || !ident.isAlive {
                 proc.waitUntilExit()
-                if stderrState.snapshot.1 { throw SnapTransError("PortInUse", p, "bind failed") }
-                throw SnapTransError("EngineExited", Int(proc.terminationStatus), stderrState.snapshot.2.isEmpty ? cause : stderrState.snapshot.2)
+                let c = stderrState.snapshot.2
+                throw SnapTransError("EngineExited", Int(proc.terminationStatus), c.isEmpty ? cause : c)
             }
-            _ = offloaded
-            if bindFailed { throw SnapTransError("PortInUse", p, "bind failed") }
+            if bindFailed { throw SnapTransError("EngineExited", 0, "bind failed") }
             if Date().timeIntervalSince(t0) > 300 { throw SnapTransError("EngineTimeout") }
-            // Nothing is sent until the listener on 127.0.0.1:port is proven to be our child process.
-            if Self.childListens(pid, port: p) {
-                if !checkedOthers {
-                    if PortOwner.listeners(port: p).contains(where: { $0 != pid }) { throw SnapTransError("PortInUse", p, "another process is listening") }
-                    guard PortOwner.parent(of: pid) == proc.processIdentifier,
-                          let exe = PortOwner.executablePath(of: pid),
-                          URL(fileURLWithPath: exe).resolvingSymlinksInPath().path == URL(fileURLWithPath: locator.serverPath).resolvingSymlinksInPath().path
-                    else { throw SnapTransError("EngineUnexpectedResponse", "pid") }
-                    checkedOthers = true
-                }
-                var req = URLRequest(url: base.appendingPathComponent("health"), timeoutInterval: Self.healthTimeout)
-                req.httpMethod = "GET"
-                if let (data, resp) = try? await s.data(for: req), (resp as? HTTPURLResponse)?.statusCode == 200,
-                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any], obj["status"] as? String == "ok" {
-                    port = p; apiKey = token
-                    // The key is only sent to the verified child; a wrong answer means it is not a llama-server.
-                    let (pd, pr) = try await send("GET", "props", body: nil, timeout: Self.healthTimeout)
-                    guard pr.statusCode == 200, let props = try? JSONSerialization.jsonObject(with: pd) as? [String: Any],
-                          props["default_generation_settings"] != nil else { throw SnapTransError("EngineUnexpectedResponse", pr.statusCode) }
+            do {
+                let health = try await raw("GET", "health", body: nil, timeout: Self.healthTimeout, authorized: false)
+                if health.status == 200, let obj = try? JSONSerialization.jsonObject(with: health.body) as? [String: Any], obj["status"] as? String == "ok" {
+                    apiKey = token
+                    // A wrong answer with the key means it is not the llama-server we expect.
+                    let props = try await raw("GET", "props", body: nil, timeout: Self.healthTimeout, authorized: true)
+                    guard props.status == 200, let o = try? JSONSerialization.jsonObject(with: props.body) as? [String: Any],
+                          o["default_generation_settings"] != nil else { throw SnapTransError("EngineUnexpectedResponse", props.status) }
                     break
                 }
+            } catch is UnixHTTP.ConnectFailed {
+                // Not listening yet.
+            } catch let e as URLError where e.code == .timedOut || e.code == .networkConnectionLost {
+                // Still loading.
             }
             try await Task.sleep(nanoseconds: 150_000_000)
         }
         if backend == .metal && !stderrState.snapshot.0 { throw SnapTransError("NotOffloaded") }
-    }
-
-    static func childListens(_ pid: pid_t, port: Int) -> Bool {
-        PortOwner.listeners(of: pid).contains { $0.0 == "127.0.0.1" && $0.1 == port }
+        // The engine has the model open; the private copy can go (frees nothing on APFS, avoids leftovers).
+        try pin?.afterLoad()
     }
 
     static func readLine(_ h: FileHandle, timeout: TimeInterval) async throws -> String {
@@ -266,32 +280,38 @@ public final class LlamaServer: @unchecked Sendable {
         }
     }
 
-    final class NoRedirect: NSObject, URLSessionTaskDelegate {
-        func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-                        newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) { completionHandler(nil) }
+    /// One request on a new connection whose peer must be the tracked child (checked on that connection).
+    func raw(_ method: String, _ path: String, body: Data?, timeout: TimeInterval, authorized: Bool) async throws -> UnixHTTP.Response {
+        guard let ident = server, !socketPath.isEmpty, guardProcess?.isRunning == true else { throw SnapTransError("EngineNotLoaded") }
+        var headers: [(String, String)] = []
+        if authorized {
+            guard !apiKey.isEmpty else { throw SnapTransError("EngineNotLoaded") }
+            headers.append(("Authorization", "Bearer \(apiKey)"))
+        }
+        if body != nil { headers.append(("Content-Type", "application/json")) }
+        let uid = getuid()
+        return try await UnixHTTP.request(socketPath: socketPath, method: method, path: "/" + path, headers: headers, body: body,
+                                          timeout: timeout) { peer, peerUid in
+            peer == ident.pid && peerUid == uid && ident.isAlive
+        }
     }
 
-    /// Sends an authenticated request only while 127.0.0.1:port is still owned by our running child.
-    func send(_ method: String, _ path: String, body: Data?, timeout: TimeInterval) async throws -> (Data, HTTPURLResponse) {
-        guard let s = session, isRunning, !apiKey.isEmpty, Self.childListens(serverPid, port: port) else { throw SnapTransError("EngineNotLoaded") }
-        var req = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/\(path)")!, timeoutInterval: timeout)
-        req.httpMethod = method
-        req.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        if let body { req.httpBody = body; req.setValue("application/json", forHTTPHeaderField: "Content-Type") }
-        let (d, r) = try await s.data(for: req)
-        guard let http = r as? HTTPURLResponse else { throw SnapTransError("EngineUnexpectedResponse", 0) }
-        return (d, http)
+    /// Sends an authenticated request to the running child.
+    func send(_ method: String, _ path: String, body: Data?, timeout: TimeInterval) async throws -> UnixHTTP.Response {
+        guard isRunning else { throw SnapTransError("EngineNotLoaded") }
+        return try await raw(method, path, body: body, timeout: timeout, authorized: true)
     }
 
     public func complete(prompt: String, stop: [String], maxTokens: Int) async throws -> String {
         let body = try JSONSerialization.data(withJSONObject: ["prompt": prompt, "temperature": 0, "n_predict": maxTokens, "stop": stop, "cache_prompt": false] as [String: Any])
-        let (d, r): (Data, HTTPURLResponse)
-        do { (d, r) = try await send("POST", "completion", body: body, timeout: Self.completionTimeout) }
+        let r: UnixHTTP.Response
+        do { r = try await send("POST", "completion", body: body, timeout: Self.completionTimeout) }
         catch let e as URLError where e.code == .timedOut { throw SnapTransError("TranslateTimeout") }
         catch let e as URLError where e.code == .cancelled { throw CancellationError() }
-        guard r.statusCode == 200 else { throw SnapTransError("TranslateHttp", r.statusCode) }
-        guard let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any], let content = obj["content"] as? String
-        else { throw SnapTransError("EngineUnexpectedResponse", r.statusCode) }
+        catch is UnixHTTP.ConnectFailed { throw SnapTransError("EngineNotLoaded") }
+        guard r.status == 200 else { throw SnapTransError("TranslateHttp", r.status) }
+        guard let obj = try? JSONSerialization.jsonObject(with: r.body) as? [String: Any], let content = obj["content"] as? String
+        else { throw SnapTransError("EngineUnexpectedResponse", r.status) }
         if obj["stop_type"] as? String == "limit" { throw SnapTransError("TooLong") }
         return content
     }
@@ -312,7 +332,7 @@ public final class PlamoTranslator: @unchecked Sendable {
     let gate = AsyncGate()
     private let lock = NSLock()
     private var modelPath = "", selection = "auto"
-    private var guardModel: (@Sendable () throws -> Void)?
+    private var prepare: ModelPreparer?
     private var currentWork: (() -> Void)?
     private var generation = 0
     public private(set) var isShutDown = false
@@ -326,8 +346,9 @@ public final class PlamoTranslator: @unchecked Sendable {
     /// Called before a load with the backend about to be tried (for "Loading model (Metal)…").
     public var loading: (@Sendable (ComputeBackend) -> Void)?
 
-    public func configure(modelPath: String, selection: String, guardModel: (@Sendable () throws -> Void)?) {
-        sync { self.modelPath = modelPath; self.selection = selection; self.guardModel = guardModel }
+    /// `prepare` checks the model right before each engine start and returns the verified copy the engine gets.
+    public func configure(modelPath: String, selection: String, prepare: ModelPreparer?) {
+        sync { self.modelPath = modelPath; self.selection = selection; self.prepare = prepare }
     }
 
     func locked<T: Sendable>(_ body: @escaping @Sendable () async throws -> T) async throws -> T {
@@ -353,12 +374,12 @@ public final class PlamoTranslator: @unchecked Sendable {
     @discardableResult
     public func ensureLoaded() async throws -> LoadedEngine {
         try await locked { [self] in
-            let (path, sel, g) = sync { (modelPath, selection, guardModel) }
+            let (path, sel, g) = sync { (modelPath, selection, prepare) }
             guard !path.isEmpty, FileManager.default.fileExists(atPath: path) else { throw SnapTransError("NoModel") }
             if !server.isRunning || server.loaded?.modelPath != path || server.loaded?.selection != sel {
                 loading?(sel == "cpu" ? .cpu : .metal)
             }
-            return try await server.load(modelPath: path, selection: sel, guardModel: g)
+            return try await server.load(modelPath: path, selection: sel, prepare: g)
         }
     }
 

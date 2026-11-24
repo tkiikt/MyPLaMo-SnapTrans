@@ -20,7 +20,7 @@ func translator(_ id: String, _ folder: String, _ sel: String) -> PlamoTranslato
     let t = PlamoTranslator(locator: .bundled())
     let m = model(id)
     let path = ModelStore(folder: folder).path(of: m)
-    t.configure(modelPath: path, selection: sel) { try ModelStore.guardModel(m, path: path) }
+    t.configure(modelPath: path, selection: sel) { dir in try ModelStore.pinnedModel(m, path: path, privateFolder: dir) }
     t.diagnostic = { print("[engine] \($0)") }
     return t
 }

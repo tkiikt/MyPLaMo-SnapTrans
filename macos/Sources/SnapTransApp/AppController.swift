@@ -49,7 +49,8 @@ final class AppController: ObservableObject {
     // MARK: lifecycle
 
     func start() {
-        AppLog.log("start \(Self.version) macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        AppLog.log("start \(Self.version) macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion)")
         applyTheme()
         statusItem = StatusItemController(app: self)
         input.onBegin = { [weak self] p in self?.selectionBegan(at: p) }
@@ -70,9 +71,13 @@ final class AppController: ObservableObject {
         } else {
             openSettings()
         }
+        #if SNAPTRANS_TEST_HOOKS
         if ProcessInfo.processInfo.environment["SNAPTRANS_OPEN_SETTINGS"] == "1" { openSettings() }
+        #endif
         AppLog.log("permissions: screen recording=\(screenGranted) accessibility=\(accessGranted) tap=\(tapInstalled)")
+        #if SNAPTRANS_TEST_HOOKS
         DebugCommands.install(self)
+        #endif
         DistributedNotificationCenter.default().addObserver(forName: Self.showSettingsNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.openSettings() }
         }
@@ -130,6 +135,10 @@ final class AppController: ObservableObject {
         if settings.enabled && !input.isInstalled && Permissions.accessibility {
             tapInstalled = input.install()
             AppLog.log("event tap: \(tapInstalled ? "installed" : "refused")")
+        } else if !settings.enabled && input.isInstalled {
+            // Drag-to-translate off: no mouse/keyboard event tap at all.
+            input.uninstall()
+            AppLog.log("event tap: removed (drag disabled)")
         }
         tapInstalled = input.isInstalled
         statusItem?.refresh()
@@ -163,7 +172,7 @@ final class AppController: ObservableObject {
     private func configureTranslator() {
         let m = activeModel
         let path = activeModelPath
-        translator.configure(modelPath: path, selection: settings.device) { if let m { try ModelStore.guardModel(m, path: path) } }
+        translator.configure(modelPath: path, selection: settings.device, prepare: m.map { m in { dir in try ModelStore.pinnedModel(m, path: path, privateFolder: dir) } })
     }
 
     /// Hashes the selected model once if it is new or changed (cached), then optionally preloads.

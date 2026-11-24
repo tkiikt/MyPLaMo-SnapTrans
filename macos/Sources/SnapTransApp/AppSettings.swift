@@ -42,10 +42,13 @@ struct HotKeySpec: Codable, Hashable {
     static let `default` = HotKeySpec(keyCode: 17 /* kVK_ANSI_T */, modifiers: [.control, .shift], keyLabel: "T")
 }
 
-/// ~/Library/Application Support/MyPLaMo-SnapTrans/settings.json (or $SNAPTRANS_PROFILE). Not shared with MyPLaMo.
+/// ~/Library/Application Support/MyPLaMo-SnapTrans/settings.json (test builds: or $SNAPTRANS_PROFILE). Not shared with
+/// MyPLaMo. The folder is 0700 and its files 0600.
 struct AppSettings: Codable, Equatable {
     static let home: URL = {
+        #if SNAPTRANS_TEST_HOOKS
         if let p = ProcessInfo.processInfo.environment["SNAPTRANS_PROFILE"], !p.isEmpty { return URL(fileURLWithPath: p, isDirectory: true) }
+        #endif
         return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("MyPLaMo-SnapTrans", isDirectory: true)
     }()
     static var fileURL: URL { home.appendingPathComponent("settings.json") }
@@ -89,35 +92,49 @@ struct AppSettings: Codable, Equatable {
         self = s
     }
 
+    /// Creates the app folder as 0700 and tightens files an earlier version created with the default umask.
+    static func preparePrivateHome() {
+        try? PrivateFiles.ensureDirectory(home)
+        for n in ["settings.json", "verify-cache.json", "snaptrans.log", "snaptrans.log.1"] { PrivateFiles.tighten(home.appendingPathComponent(n)) }
+        let models = home.appendingPathComponent("models")
+        if FileManager.default.fileExists(atPath: models.path) { try? PrivateFiles.ensureDirectory(models) }
+    }
+
     static func load() -> AppSettings {
+        preparePrivateHome()
         guard let data = try? Data(contentsOf: fileURL), let s = try? JSONDecoder().decode(AppSettings.self, from: data) else { return AppSettings() }
         return s
     }
 
     func save() {
-        try? FileManager.default.createDirectory(at: Self.home, withIntermediateDirectories: true)
+        try? PrivateFiles.ensureDirectory(Self.home)
         let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if let data = try? enc.encode(self) { try? data.write(to: Self.fileURL, options: .atomic) }
+        if let data = try? enc.encode(self) { try? PrivateFiles.write(data, to: Self.fileURL) }
     }
 }
 
-/// Diagnostic log (~/Library/Application Support/MyPLaMo-SnapTrans/snaptrans.log). Callers pass fixed text and numbers
-/// only: never recognized or translated text, file paths or keys. Rotated at 1 MB.
+/// Diagnostic log (~/Library/Application Support/MyPLaMo-SnapTrans/snaptrans.log, 0600). Callers pass fixed text and
+/// numbers only: never recognized or translated text, file paths or keys. Enforced by an allowlist of characters (no
+/// "/", "~", non-ASCII text…): a line outside it is reduced to its first word. Rotated at 1 MB.
 enum AppLog {
     static let queue = DispatchQueue(label: "snaptrans.log")
-    static func log(_ line: String) {
+    static func allowed(_ line: String) -> String {
+        if line.count <= 400, line.range(of: #"^[A-Za-z0-9 ._:;=+()%,?-]*$"#, options: .regularExpression) != nil { return line }
+        let head = line.prefix { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == " " || $0 == ":" || $0 == "-") }.prefix(60)
+        return "\(head) [redacted]"
+    }
+    static func log(_ raw: String) {
+        let line = allowed(raw)
         let stamp = ISO8601DateFormatter.string(from: Date(), timeZone: .current, formatOptions: [.withInternetDateTime, .withFractionalSeconds])
         queue.async {
             let url = AppSettings.home.appendingPathComponent("snaptrans.log")
-            try? FileManager.default.createDirectory(at: AppSettings.home, withIntermediateDirectories: true)
+            try? PrivateFiles.ensureDirectory(AppSettings.home)
             if let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.intValue, size > 1_000_000 {
                 let old = url.appendingPathExtension("1")
                 try? FileManager.default.removeItem(at: old)
                 try? FileManager.default.moveItem(at: url, to: old)
             }
-            let data = Data("\(stamp) \(line)\n".utf8)
-            if let h = try? FileHandle(forWritingTo: url) { h.seekToEndOfFile(); h.write(data); try? h.close() }
-            else { try? data.write(to: url) }
+            PrivateFiles.append(Data("\(stamp) \(line)\n".utf8), to: url)
         }
     }
     static func error(_ context: String, _ e: Error) {

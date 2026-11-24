@@ -84,7 +84,9 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        #if SNAPTRANS_TEST_HOOKS
         .onAppear { DebugCommands.scrollRequest = { id in withAnimation { proxy.scrollTo(id, anchor: .top) } } }
+        #endif
         }
         .environment(\.locale, Locale(identifier: Loc.current))
     }
@@ -209,7 +211,7 @@ struct SettingsView: View {
     }
 
     func openFolder() {
-        try? FileManager.default.createDirectory(atPath: app.settings.modelFolder, withIntermediateDirectories: true)
+        try? PrivateFiles.ensureDirectory(URL(fileURLWithPath: app.settings.modelFolder, isDirectory: true), tighten: false)
         NSWorkspace.shared.open(URL(fileURLWithPath: app.settings.modelFolder, isDirectory: true))
     }
 

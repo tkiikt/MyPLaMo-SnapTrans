@@ -68,9 +68,23 @@ import Testing
         #expect(EngineIntegrity.manifest.release.contains("b12121"))
     }
 
-    @Test func freePortIsLoopback() throws {
-        let p = try LlamaServer.freeLoopbackPort()
-        #expect(p > 1024 && p < 65536)
+    @Test func randomKeyAndRunFolder() throws {
+        let k = try LlamaServer.randomKey()
+        #expect(k.count == 32)
+        let dir = try LlamaServer.makeRunFolder()
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+        let mode = (try FileManager.default.attributesOfItem(atPath: dir)[.posixPermissions] as! NSNumber).intValue
+        #expect(mode == 0o700)
+    }
+
+    @Test func httpParsing() throws {
+        let plain = Data("HTTP/1.1 200 OK\r\nContent-Length: 4\r\nContent-Type: application/json\r\n\r\n{\"a\"}".utf8)
+        let r = try UnixHTTP.parse(plain, complete: false)
+        #expect(r.status == 200 && String(decoding: r.body, as: UTF8.self) == "{\"a\"")
+        let chunked = Data("HTTP/1.1 503 Busy\r\nTransfer-Encoding: chunked\r\n\r\n3\r\nabc\r\n2\r\nde\r\n0\r\n\r\n".utf8)
+        let c = try UnixHTTP.parse(chunked, complete: false)
+        #expect(c.status == 503 && String(decoding: c.body, as: UTF8.self) == "abcde")
+        #expect(throws: UnixHTTP.Incomplete.self) { try UnixHTTP.parse(Data("HTTP/1.1 200 OK\r\nContent-Length: 9\r\n\r\nab".utf8), complete: false) }
     }
 
     @Test func tamperedEngineIsRejected() throws {
@@ -94,5 +108,21 @@ import Testing
         #expect(store.state(of: m) == .partial)
         try Data(count: 10).write(to: URL(fileURLWithPath: store.path(of: m)))
         #expect(store.state(of: m) == .corrupt)   // size matches no official file
+        // A file of the wrong size is never handed to the engine.
+        #expect(throws: SnapTransError.self) { try ModelStore.pinnedModel(m, path: store.path(of: m), privateFolder: dir.path) }
+    }
+
+    @Test func privateFiles() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("snaptrans-private-test-\(UUID().uuidString)/sub")
+        defer { try? FileManager.default.removeItem(at: dir.deletingLastPathComponent()) }
+        try PrivateFiles.ensureDirectory(dir)
+        let f = dir.appendingPathComponent("a.json")
+        try PrivateFiles.write(Data("{}".utf8), to: f)
+        PrivateFiles.append(Data("x".utf8), to: dir.appendingPathComponent("log"))
+        func mode(_ u: URL) throws -> Int { (try FileManager.default.attributesOfItem(atPath: u.path)[.posixPermissions] as! NSNumber).intValue }
+        #expect(try mode(dir) == 0o700)
+        #expect(try mode(f) == 0o600)
+        #expect(try mode(dir.appendingPathComponent("log")) == 0o600)
+        #expect(try String(contentsOf: f, encoding: .utf8) == "{}")
     }
 }

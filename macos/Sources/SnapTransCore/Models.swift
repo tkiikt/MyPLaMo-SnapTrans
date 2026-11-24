@@ -75,8 +75,14 @@ public final class VerificationCache: @unchecked Sendable {
     public static func stamp(_ path: String) -> String? {
         var st = stat()
         guard stat(path, &st) == 0 else { return nil }
-        return "\(st.st_size)|\(st.st_mtimespec.tv_sec).\(st.st_mtimespec.tv_nsec)|\(st.st_ino)"
+        return stamp(st)
     }
+    public static func stamp(fd: Int32) -> String? {
+        var st = stat()
+        guard fstat(fd, &st) == 0 else { return nil }
+        return stamp(st)
+    }
+    static func stamp(_ st: stat) -> String { "\(st.st_size)|\(st.st_mtimespec.tv_sec).\(st.st_mtimespec.tv_nsec)|\(st.st_ino)" }
 
     private func loaded() -> [String: Entry] {
         if let e = entries { return e }
@@ -89,6 +95,11 @@ public final class VerificationCache: @unchecked Sendable {
     /// The recorded hash if the file is unchanged since it was hashed. For files others can write, only this session's results count.
     public func lookup(_ path: String) -> String? {
         guard let stamp = Self.stamp(path) else { return nil }
+        return lookup(path, stamp: stamp)
+    }
+
+    /// The recorded hash for `path` if it was recorded for exactly this stamp (e.g. taken from an open descriptor).
+    public func lookup(_ path: String, stamp: String) -> String? {
         let persistedOK = !FolderTrust.isWritableByOthers(path)
         lock.lock(); defer { lock.unlock() }
         if let s = session[path], s.stamp == stamp { return s.sha256 }
@@ -98,14 +109,18 @@ public final class VerificationCache: @unchecked Sendable {
 
     public func record(_ path: String, sha256: String) {
         guard let stamp = Self.stamp(path) else { return }
+        record(path, stamp: stamp, sha256: sha256)
+    }
+
+    public func record(_ path: String, stamp: String, sha256: String) {
         lock.lock(); defer { lock.unlock() }
         var e = loaded()
         e[path] = Entry(stamp: stamp, sha256: sha256.lowercased())
         entries = e
         session[path] = Entry(stamp: stamp, sha256: sha256.lowercased())
         guard let f = filePath else { return }
-        try? FileManager.default.createDirectory(at: f.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if let data = try? JSONEncoder().encode(e) { try? data.write(to: f, options: .atomic) }
+        try? PrivateFiles.ensureDirectory(f.deletingLastPathComponent(), tighten: false)
+        if let data = try? JSONEncoder().encode(e) { try? PrivateFiles.write(data, to: f) }
     }
 
     public func forget(_ path: String) {
@@ -118,8 +133,15 @@ public final class VerificationCache: @unchecked Sendable {
 
 public enum FileHash {
     public static func sha256(_ path: String, progress: ((Int64) -> Void)? = nil) throws -> String {
-        guard let h = FileHandle(forReadingAtPath: path) else { throw SnapTransError("ModelMissing") }
-        defer { try? h.close() }
+        let fd = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { throw SnapTransError("ModelMissing") }
+        let h = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        return try sha256(handle: h, progress: progress)
+    }
+
+    /// Hashes everything from the start of an already open file (the caller keeps ownership of the descriptor).
+    public static func sha256(handle h: FileHandle, progress: ((Int64) -> Void)? = nil) throws -> String {
+        try h.seek(toOffset: 0)
         var hasher = SHA256()
         var done: Int64 = 0
         while true {
@@ -162,19 +184,24 @@ public struct ModelStore: Sendable {
     public func partialBytes(of m: ModelInfo) -> Int64 { Self.size(partPath(of: m)) ?? 0 }
 
     /// Downloads the current official file (resumes a .part). With `replaceExisting`, an existing (older) file is
-    /// replaced only after the new one has been fully downloaded and verified.
+    /// replaced only after the new one has been fully downloaded and verified. The .part is one owner-only (0600) file
+    /// handled through a single descriptor from creation to promotion: locked, written, hashed and checked to still be
+    /// the same file at its path, then renamed into place while the lock is held.
     public func download(_ m: ModelInfo, replaceExisting: Bool = false,
                          progress: @escaping @Sendable (DownloadProgress) -> Void) async throws {
         guard folder.hasPrefix("/") else { throw SnapTransError("FolderNotAbsolute") }
-        try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        try PrivateFiles.ensureDirectory(URL(fileURLWithPath: folder, isDirectory: true), tighten: false)
         let dest = path(of: m)
         if FileManager.default.fileExists(atPath: dest) && !replaceExisting { _ = try await verify(m, progress: progress); return }
         let part = partPath(of: m)
-        if !FileManager.default.fileExists(atPath: part) { FileManager.default.createFile(atPath: part, contents: nil) }
-        guard let out = FileHandle(forUpdatingAtPath: part) else { throw SnapTransError("FolderNotWritable") }
-        defer { try? out.close() }
+        let fd = open(part, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard fd >= 0 else { throw SnapTransError("FolderNotWritable") }
+        let out = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
         // One writer per .part, also across processes (e.g. a second SnapTrans or the CLI); released on close.
-        guard flock(out.fileDescriptor, LOCK_EX | LOCK_NB) == 0 else { throw SnapTransError("DownloadInProgress") }
+        guard flock(fd, LOCK_EX | LOCK_NB) == 0 else { throw SnapTransError("DownloadInProgress") }
+        var st = stat()
+        guard fstat(fd, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG, st.st_uid == getuid() else { throw SnapTransError("FolderNotWritable") }
+        if st.st_mode & 0o077 != 0 { fchmod(fd, 0o600) }
         var offset = Int64(try out.seekToEnd())
         if offset > m.bytes { try out.truncate(atOffset: 0); offset = 0 }
         if let free = (try? URL(fileURLWithPath: folder).resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?.volumeAvailableCapacityForImportantUsage,
@@ -215,13 +242,17 @@ public struct ModelStore: Sendable {
             try Task.checkCancellation()
             if position != m.bytes { throw SnapTransError("Interrupted") }
         }
-        try out.close()
         progress(.init(phase: .verifying, received: 0, total: m.bytes, bytesPerSecond: 0))
-        let sha = try FileHash.sha256(part) { done in progress(.init(phase: .verifying, received: done, total: m.bytes, bytesPerSecond: 0)) }
-        guard m.isCurrent(sha) else { try? FileManager.default.removeItem(atPath: part); throw SnapTransError("HashMismatch") }
-        if replaceExisting { _ = try FileManager.default.replaceItemAt(URL(fileURLWithPath: dest), withItemAt: URL(fileURLWithPath: part)) }
-        else { try FileManager.default.moveItem(atPath: part, toPath: dest) }
-        VerificationCache.shared.record(dest, sha256: sha)
+        // Hash through the same (locked) descriptor that wrote the data.
+        let sha = try FileHash.sha256(handle: out) { done in progress(.init(phase: .verifying, received: done, total: m.bytes, bytesPerSecond: 0)) }
+        guard m.isCurrent(sha) else { _ = try? out.truncate(atOffset: 0); unlink(part); throw SnapTransError("HashMismatch") }
+        // The path must still name the file we hashed before it is promoted.
+        var now = stat(), atPath = stat()
+        guard fstat(fd, &now) == 0, lstat(part, &atPath) == 0, now.st_dev == atPath.st_dev, now.st_ino == atPath.st_ino else { throw SnapTransError("HashMismatch") }
+        let flags: UInt32 = replaceExisting ? 0 : UInt32(RENAME_EXCL)
+        guard renamex_np(part, dest, flags) == 0 else { throw SnapTransError(errno == EEXIST ? "DownloadInProgress" : "FolderNotWritable") }
+        if let stamp = VerificationCache.stamp(fd: fd) { VerificationCache.shared.record(dest, stamp: stamp, sha256: sha) }
+        try out.close()
         progress(.init(phase: .done, received: m.bytes, total: m.bytes, bytesPerSecond: 0))
     }
 
@@ -251,12 +282,66 @@ public struct ModelStore: Sendable {
         VerificationCache.shared.forget(path(of: m))
     }
 
-    /// Check run right before the engine loads the model. In a folder only the current user can write, an unchanged
-    /// file with a cached official hash is accepted; anywhere else it is hashed again.
-    public static func guardModel(_ m: ModelInfo, path: String) throws {
-        if !FolderTrust.isWritableByOthers(path), let cached = VerificationCache.shared.lookup(path), m.version(for: cached) != nil { return }
-        let sha = try FileHash.sha256(path)
-        guard m.version(for: sha) != nil else { throw SnapTransError("ExistingHashMismatch") }
-        VerificationCache.shared.record(path, sha256: sha)
+    /// Runs right before each engine start and returns the file the engine must open: the model is opened once
+    /// (no symlinks) and cloned through that descriptor into `privateFolder` (owner-only, 0700), so the engine reads a
+    /// copy nobody else can change. The copy is accepted when the opened file is unchanged since a cached official hash
+    /// (in a folder only this user can write) or when the copy itself hashes to an official version. Where cloning is
+    /// not possible (another volume, not APFS), the verified original is used and must still be the same file, with
+    /// the same stamp, once the engine has loaded it.
+    public static func pinnedModel(_ m: ModelInfo, path: String, privateFolder: String) throws -> PinnedModel {
+        let fd = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { throw SnapTransError(errno == ELOOP ? "ExistingHashMismatch" : "ModelMissing") }
+        let h = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        var st = stat()
+        guard fstat(fd, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { throw SnapTransError("ExistingHashMismatch") }
+        guard m.isKnownSize(Int64(st.st_size)) else { throw SnapTransError("ExistingHashMismatch") }
+        let stamp0 = VerificationCache.stamp(st)
+        let trustedFolder = !FolderTrust.isWritableByOthers(path)
+        func cachedOK(_ stamp: String) -> Bool {
+            trustedFolder && VerificationCache.shared.lookup(path, stamp: stamp).flatMap { m.version(for: $0) } != nil
+        }
+        let copy = (privateFolder as NSString).appendingPathComponent("model.gguf")
+        if fclonefileat(fd, AT_FDCWD, copy, 0) == 0 {
+            chmod(copy, 0o600)
+            if cachedOK(stamp0), VerificationCache.stamp(fd: fd) == stamp0 { return PinnedModel(path: copy, isCopy: true, handle: nil, original: path, stamp: stamp0) }
+            let sha = try FileHash.sha256(copy)
+            guard m.version(for: sha) != nil else { unlink(copy); throw SnapTransError("ExistingHashMismatch") }
+            if VerificationCache.stamp(fd: fd) == stamp0 { VerificationCache.shared.record(path, stamp: stamp0, sha256: sha) }
+            return PinnedModel(path: copy, isCopy: true, handle: nil, original: path, stamp: stamp0)
+        }
+        if !cachedOK(stamp0) {
+            let sha = try FileHash.sha256(handle: h)
+            guard m.version(for: sha) != nil, VerificationCache.stamp(fd: fd) == stamp0 else { throw SnapTransError("ExistingHashMismatch") }
+            VerificationCache.shared.record(path, stamp: stamp0, sha256: sha)
+        }
+        return PinnedModel(path: path, isCopy: false, handle: h, original: path, stamp: stamp0)
+    }
+}
+
+/// The model file an engine start uses (see ModelStore.pinnedModel).
+public final class PinnedModel: @unchecked Sendable {
+    public let path: String
+    let isCopy: Bool
+    var handle: FileHandle?
+    let original: String
+    let stamp: String
+
+    init(path: String, isCopy: Bool, handle: FileHandle?, original: String, stamp: String) {
+        self.path = path; self.isCopy = isCopy; self.handle = handle; self.original = original; self.stamp = stamp
+    }
+
+    /// Called once the engine has loaded the model: removes the private copy (the engine keeps its open mapping), or
+    /// for an uncopied original checks that the path still names the verified, unchanged file.
+    public func afterLoad() throws {
+        if isCopy { unlink(path); return }
+        defer { try? handle?.close(); handle = nil }
+        guard let h = handle, VerificationCache.stamp(fd: h.fileDescriptor) == stamp, VerificationCache.stamp(original) == stamp else {
+            throw SnapTransError("ExistingHashMismatch")
+        }
+    }
+
+    deinit {
+        if isCopy { unlink(path) }
+        try? handle?.close()
     }
 }

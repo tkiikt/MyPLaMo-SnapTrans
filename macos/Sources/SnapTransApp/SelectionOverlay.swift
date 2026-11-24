@@ -57,7 +57,11 @@ final class SelectionOverlay {
     private var current: CGPoint?
     private var interactiveCompletion: ((CGRect?) -> Void)?
     private var escMonitor: Any?
+    #if SNAPTRANS_TEST_HOOKS
     static var visibleToCapture: Bool { ProcessInfo.processInfo.environment["SNAPTRANS_SHOW_IN_CAPTURE"] == "1" }
+    #else
+    static let visibleToCapture = false
+    #endif
     var isActive: Bool { !windows.isEmpty }
     var isInteractive: Bool { interactiveCompletion != nil }
 
@@ -141,6 +145,7 @@ final class SelectionOverlay {
     func interactiveDrag(_ e: NSEvent) { if start == nil { start = point(e) }; current = point(e); redraw() }
     func interactiveUp(_ e: NSEvent) { current = point(e); finishInteractive(rect) }
 
+    #if SNAPTRANS_TEST_HOOKS
     /// Test hook (DebugCommands): routes synthetic mouse events through the overlay window under the start point.
     func debugDrag(from a: CGPoint, to b: CGPoint) {
         let pa = NSPoint(x: a.x, y: Geometry.mainHeight - a.y), pb = NSPoint(x: b.x, y: Geometry.mainHeight - b.y)
@@ -156,6 +161,7 @@ final class SelectionOverlay {
         }
         if let e = ev(.leftMouseUp, pb) { w.sendEvent(e) }
     }
+    #endif
 
     func finishInteractive(_ r: CGRect?) {
         let done = interactiveCompletion

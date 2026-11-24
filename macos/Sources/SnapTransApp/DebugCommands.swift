@@ -1,7 +1,9 @@
 import AppKit
 import SnapTransCore
 
-/// Test-only remote control, active only when SNAPTRANS_DEBUG_COMMANDS=1 (never in normal use). Commands arrive as
+#if SNAPTRANS_TEST_HOOKS
+/// Test-only remote control, compiled only into test builds (SNAPTRANS_TEST_HOOKS; never in the distribution build)
+/// and active only when SNAPTRANS_DEBUG_COMMANDS=1. Commands arrive as
 /// distributed notifications named "io.github.tkiikt.MyPLaMo-SnapTrans.debug" with the command in `object`, e.g.
 ///   select <x> <y> <w> <h>   translate a CG-global rectangle (points), as if it had been dragged
 ///   frame <x> <y> <w> <h>    show the passive selection frame over that rectangle (for screenshots); "frame off" hides it
@@ -48,7 +50,7 @@ enum DebugCommands {
         case "hide-popup": app.popup.hide()
         case "quit": app.quit()
         case "status":
-            AppLog.log("status: AXIsProcessTrusted=\(Permissions.accessibility) CGPreflightScreenCaptureAccess=\(Permissions.screenRecording) CGPreflightListenEventAccess=\(CGPreflightListenEventAccess()) tap=\(app.input.isInstalled) mouseDowns=\(app.input.seenDowns) withModifiers=\(app.input.matchedDowns) tapReenabled=\(app.input.reenabled)")
+            AppLog.log("status: AXIsProcessTrusted=\(Permissions.accessibility) CGPreflightScreenCaptureAccess=\(Permissions.screenRecording) CGPreflightListenEventAccess=\(CGPreflightListenEventAccess()) tap=\(app.input.isInstalled) mouseDowns=\(app.input.counters.seenDowns) withModifiers=\(app.input.counters.matchedDowns) tapReenabled=\(app.input.counters.reenabled)")
         case "scroll" where p.count > 1: scrollRequest?(p[1])
         case "lang" where p.count > 1: app.settings.language = p[1]; app.applyLanguage(); app.settingsWindow?.window.title = Loc.t("Settings_Title")
         case "theme" where p.count > 1: app.settings.theme = p[1]; app.applyTheme()
@@ -58,3 +60,4 @@ enum DebugCommands {
         }
     }
 }
+#endif
