@@ -54,9 +54,6 @@ public final class LlamaServer: @unchecked Sendable {
     var socketPath = ""
     var apiKey = ""
     var pinned: PinnedModel?
-    /// kqueue with an EVFILT_PROC/NOTE_EXIT knote on the tracked child, registered while it was identified. The knote
-    /// belongs to that process, not to its PID number: as long as it has not fired, the PID still names our child.
-    var exitWatch: Int32 = -1
     let stderrState = StderrState()
     public private(set) var loaded: LoadedEngine?
     public var diagnostic: (@Sendable (String) -> Void)?
@@ -94,17 +91,9 @@ public final class LlamaServer: @unchecked Sendable {
             if g.isRunning { g.terminate(); g.waitUntilExit() }
             guardProcess = nil
         }
-        // The guard reaps llama-server before it exits (its own child: the PID cannot be reused before waitpid), so
-        // normally nothing is left. Only if the guard died abnormally can an orphan remain: it is killed only while
-        // its NOTE_EXIT knote has not fired (the process registered at start has not exited, so the PID is still its)
-        // and its start time still matches.
-        if let s = server, exitWatch >= 0 {
-            var ev = kevent()
-            var zero = timespec(tv_sec: 0, tv_nsec: 0)
-            let n = kevent(exitWatch, nil, 0, &ev, 1, &zero)
-            if n == 0, s.isAlive { kill(s.pid, SIGKILL) }
-        }
-        if exitWatch >= 0 { close(exitWatch); exitWatch = -1 }
+        // No signal is ever sent to llama-server's PID from here. It is the guard's own child: the guard terminates
+        // it (SIGTERM, SIGKILL after 5 s) and reaps it before exiting, so the PID cannot be recycled while it is
+        // signalled. The guard does the same when this app exits or crashes (kqueue NOTE_EXIT on the app).
         server = nil
         pinned = nil
         if let dir = runFolder { try? FileManager.default.removeItem(atPath: dir) }
@@ -113,7 +102,7 @@ public final class LlamaServer: @unchecked Sendable {
     }
 
     /// - Parameter selection: "auto" (Metal, CPU fallback), "metal" or "cpu".
-    public func load(modelPath: String, selection: String, prepare: ModelPreparer?) async throws -> LoadedEngine {
+    public func load(modelPath: String, selection: String, prepare: ModelPreparer) async throws -> LoadedEngine {
         if let current = loaded, current.modelPath == modelPath, current.selection == selection, isRunning { return current }
         stop()
         do {
@@ -122,7 +111,7 @@ public final class LlamaServer: @unchecked Sendable {
             var reason: String?
             if selection != "cpu" {
                 do {
-                    try await start(modelPath: modelPath, backend: .metal, prepare: prepare)
+                    try await start(backend: .metal, prepare: prepare)
                     let l = LoadedEngine(modelPath: modelPath, selection: selection, backend: .metal, fallbackReason: nil, loadTime: Date().timeIntervalSince(t0))
                     loaded = l; return l
                 } catch let e as SnapTransError {
@@ -133,7 +122,7 @@ public final class LlamaServer: @unchecked Sendable {
                     stopProcess()
                 }
             }
-            try await start(modelPath: modelPath, backend: .cpu, prepare: prepare)
+            try await start(backend: .cpu, prepare: prepare)
             let l = LoadedEngine(modelPath: modelPath, selection: selection, backend: .cpu, fallbackReason: reason, loadTime: Date().timeIntervalSince(t0))
             loaded = l; return l
         } catch {
@@ -182,16 +171,18 @@ public final class LlamaServer: @unchecked Sendable {
         }
     }
 
-    func start(modelPath: String, backend: ComputeBackend, prepare: ModelPreparer?) async throws {
+    func start(backend: ComputeBackend, prepare: ModelPreparer) async throws {
         let token = try Self.randomKey()
         let dir = try Self.makeRunFolder()
         runFolder = dir
         let sock = (dir as NSString).appendingPathComponent("engine.sock")
         // The model is checked again right here and the engine gets the verified owner-only copy.
-        let pin = try prepare?(dir)
+        let pin = try prepare(dir)
         pinned = pin
+        // Last check right before the spawn: the private copy is still ours, 0600 in a 0700 folder, unchanged.
+        try pin.verifyForLaunch()
         var args = [String(getpid()), locator.serverPath,
-                    "-m", pin?.path ?? modelPath, "-c", "4096", "-np", "1", "--host", sock,
+                    "-m", pin.path, "-c", "4096", "-np", "1", "--host", sock,
                     "--no-webui", "--offline", "--no-mmproj", "--no-slots", "--cache-ram", "0", "--no-cache-prompt",
                     // 4: the "offloaded N/M layers" line (Metal check) is a debug-level message. stderr is only
                     // scanned in memory for fixed conditions and never stored.
@@ -239,15 +230,6 @@ public final class LlamaServer: @unchecked Sendable {
               let exe = PortOwner.executablePath(of: pid),
               URL(fileURLWithPath: exe).resolvingSymlinksInPath().path == URL(fileURLWithPath: locator.serverPath).resolvingSymlinksInPath().path
         else { throw SnapTransError("EngineUnexpectedResponse", "pid") }
-        let kq = kqueue()
-        guard kq >= 0 else { throw SnapTransError("EngineExited", 0, "kqueue") }
-        _ = fcntl(kq, F_SETFD, FD_CLOEXEC)
-        var watch = kevent(ident: UInt(pid), filter: Int16(EVFILT_PROC), flags: UInt16(EV_ADD | EV_ONESHOT), fflags: NOTE_EXIT, data: 0, udata: nil)
-        // Registered before the identity is re-checked: if it is still the same process now, the knote is on it.
-        guard kevent(kq, &watch, 1, nil, 0, nil) == 0, ProcessIdentity.of(pid) == ident else {
-            close(kq); throw SnapTransError("EngineUnexpectedResponse", "pid")
-        }
-        exitWatch = kq
         server = ident
         socketPath = sock
 
@@ -281,7 +263,7 @@ public final class LlamaServer: @unchecked Sendable {
         }
         if backend == .metal && !stderrState.snapshot.0 { throw SnapTransError("NotOffloaded") }
         // The engine has the model open; the private copy can go (frees nothing on APFS, avoids leftovers).
-        try pin?.afterLoad()
+        try pin.afterLoad()
     }
 
     static func readLine(_ h: FileHandle, timeout: TimeInterval) async throws -> String {
@@ -395,8 +377,9 @@ public final class PlamoTranslator: @unchecked Sendable {
     @discardableResult
     public func ensureLoaded() async throws -> LoadedEngine {
         try await locked { [self] in
-            let (path, sel, g) = sync { (modelPath, selection, prepare) }
-            guard !path.isEmpty, FileManager.default.fileExists(atPath: path) else { throw SnapTransError("NoModel") }
+            let (path, sel, prep) = sync { (modelPath, selection, prepare) }
+            // No preparer, no engine: the engine only ever opens the verified private copy, never `path`.
+            guard !path.isEmpty, let g = prep, FileManager.default.fileExists(atPath: path) else { throw SnapTransError("NoModel") }
             if !server.isRunning || server.loaded?.modelPath != path || server.loaded?.selection != sel {
                 loading?(sel == "cpu" ? .cpu : .metal)
             }

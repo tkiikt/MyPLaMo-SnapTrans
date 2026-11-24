@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Testing
 @testable import SnapTransCore
@@ -96,7 +97,7 @@ import Testing
     }
 }
 
-@Suite struct StoreTests {
+@Suite(.serialized) struct StoreTests {
     @Test func states() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("snaptrans-store-test-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -110,6 +111,46 @@ import Testing
         #expect(store.state(of: m) == .corrupt)   // size matches no official file
         // A file of the wrong size is never handed to the engine.
         #expect(throws: SnapTransError.self) { PrivateModelCopy.folder = dir.appendingPathComponent("copy"); try ModelStore.pinnedModel(m, path: store.path(of: m)) }
+    }
+
+    @Test func privateCopyIsRequiredAndChecked() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("snaptrans-copy-test-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let data = Data(repeating: 7, count: 4096)
+        let sha = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        let json = #"{"id":"t","file":"t.gguf","bytes":4096,"sha":"\#(sha)","url":"https://example.invalid/t","versions":[{"rev":"r","date":"d","bytes":4096,"sha":"\#(sha)"}]}"#
+        let m = try JSONDecoder().decode(ModelInfo.self, from: Data(json.utf8))
+        let src = root.appendingPathComponent("t.gguf")
+        try data.write(to: src)
+        PrivateModelCopy.folder = root.appendingPathComponent("copy")
+        let pin = try ModelStore.pinnedModel(m, path: src.path)
+        #expect(pin.path != src.path)
+        try pin.verifyForLaunch()
+        let attrs = { (p: String) in (try FileManager.default.attributesOfItem(atPath: p)[.posixPermissions] as! NSNumber).intValue }
+        #expect(try attrs(pin.path) == 0o600)
+        // Mode broken → not launched; the next prepare makes a fresh verified copy.
+        chmod(pin.path, 0o644)
+        #expect(throws: SnapTransError.self) { try pin.verifyForLaunch() }
+        let pin2 = try ModelStore.pinnedModel(m, path: src.path)
+        try pin2.verifyForLaunch()
+        // Folder mode broken → not launched.
+        chmod(PrivateModelCopy.folder!.path, 0o755)
+        #expect(throws: SnapTransError.self) { try pin2.verifyForLaunch() }
+        chmod(PrivateModelCopy.folder!.path, 0o700)
+        // A second link (someone else's name for the same inode) → not launched.
+        link(pin2.path, root.appendingPathComponent("other").path)
+        #expect(throws: SnapTransError.self) { try pin2.verifyForLaunch() }
+        unlink(root.appendingPathComponent("other").path)
+        // Content changed (same size) → not launched; a fresh copy is made from the source.
+        let h = try FileHandle(forWritingTo: URL(fileURLWithPath: pin2.path)); try h.write(contentsOf: Data([1])); try h.close()
+        #expect(throws: SnapTransError.self) { try pin2.verifyForLaunch() }
+        let pin3 = try ModelStore.pinnedModel(m, path: src.path)
+        try pin3.verifyForLaunch()
+        #expect(try Data(contentsOf: URL(fileURLWithPath: pin3.path)) == data)
+        // Tampered source → rejected.
+        try Data(repeating: 8, count: 4096).write(to: src)
+        #expect(throws: SnapTransError.self) { try ModelStore.pinnedModel(m, path: src.path) }
     }
 
     @Test func privateFiles() throws {

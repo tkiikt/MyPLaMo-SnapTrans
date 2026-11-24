@@ -296,13 +296,13 @@ public struct ModelStore: Sendable {
 /// source file (path + size/mtime/inode stamp) and the SHA-256 of the copy's bytes.
 ///
 /// Making a copy: the source is opened once (no symlinks) and
-///   - cloned through that descriptor (APFS, same volume: instant, no extra space), then the clone is hashed, unless
-///     the source is unchanged since a cached official hash in a folder only this user can write; or
+///   - cloned through that descriptor (APFS, same volume: instant, no extra space), then the clone is always hashed; or
 ///   - streamed through that descriptor into the copy while hashing the same bytes (one read of the source; needs free
 ///     space for one more model on the app's volume, checked first: ModelCopyNoSpace otherwise).
 /// Only a copy whose bytes hash to an official version is kept. The engine then never reads the user's folder, so a
 /// file replaced there after the check is never used. While the source keeps the same stamp the existing copy is
-/// reused (no copying at every start); one copy is kept at a time and it is removed when the model is deleted in the
+/// reused without re-hashing only while the copy itself is untouched (same device, inode, size, mtime, ctime, owner,
+/// 0600, one link, 0700 folder: checkPrivate); one copy is kept at a time and it is removed when the model is deleted in the
 /// app, replaced by another model's copy, or its source disappears (removeOrphan at start).
 public enum PrivateModelCopy {
     nonisolated(unsafe) public static var folder: URL?
@@ -347,14 +347,32 @@ public enum PrivateModelCopy {
 
     static func gb(_ n: Int64) -> String { String(format: "%.2f GB", Double(n) / 1e9) }
 
+    /// Identity and protection of a private file: device, inode, size, mtime, ctime (which unprivileged code cannot set
+    /// back), owner, mode and link count. Throws unless it is a regular file owned by this user, mode 0600, one link,
+    /// in a folder owned by this user with mode 0700.
+    static func checkPrivate(_ p: String) throws -> String {
+        var st = stat(), dir = stat()
+        guard lstat(p, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG, st.st_uid == getuid(), (st.st_mode & 0o7777) == 0o600, st.st_nlink == 1
+        else { throw SnapTransError("ModelCopyFailed", "permissions") }
+        guard lstat((p as NSString).deletingLastPathComponent, &dir) == 0, (dir.st_mode & S_IFMT) == S_IFDIR, dir.st_uid == getuid(),
+              (dir.st_mode & 0o7777) == 0o700
+        else { throw SnapTransError("ModelCopyFailed", "permissions") }
+        return "\(st.st_dev)|\(st.st_ino)|\(st.st_size)|\(st.st_mtimespec.tv_sec).\(st.st_mtimespec.tv_nsec)|\(st.st_ctimespec.tv_sec).\(st.st_ctimespec.tv_nsec)|\(st.st_uid)|\(st.st_mode)|\(st.st_nlink)"
+    }
+
+    /// Hashes an open file and, on the same descriptor, enforces mode 0600 (a failing fchmod is an error).
+    static func hashPrivate(_ fd: Int32) throws -> String {
+        guard fchmod(fd, 0o600) == 0 else { throw SnapTransError("ModelCopyFailed", "chmod") }
+        return try FileHash.sha256(handle: FileHandle(fileDescriptor: fd, closeOnDealloc: false))
+    }
+
     public static func prepare(_ m: ModelInfo, path: String) throws -> PinnedModel {
         guard let f = folder else { throw SnapTransError("ModelCopyFailed", "folder") }
         lock.lock(); defer { lock.unlock() }
         try PrivateFiles.ensureDirectory(f)
         var dst = stat()
-        guard lstat(f.path, &dst) == 0, (dst.st_mode & S_IFMT) == S_IFDIR, dst.st_uid == getuid(), (dst.st_mode & 0o077) == 0 else {
-            throw SnapTransError("ModelCopyFailed", "folder")
-        }
+        guard lstat(f.path, &dst) == 0, (dst.st_mode & S_IFMT) == S_IFDIR, dst.st_uid == getuid() else { throw SnapTransError("ModelCopyFailed", "folder") }
+        if (dst.st_mode & 0o7777) != 0o700 { guard chmod(f.path, 0o700) == 0 else { throw SnapTransError("ModelCopyFailed", "chmod") } }
         let copy = copyURL!.path
 
         let fd = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
@@ -366,24 +384,22 @@ public enum PrivateModelCopy {
         guard m.isKnownSize(size) else { throw SnapTransError("ExistingHashMismatch") }
         let stamp0 = VerificationCache.stamp(st)
 
-        // Reuse: same source file (unchanged stamp) and our copy is still exactly what we wrote.
+        // Reuse without re-hashing only for our own copy exactly as we left it: same device, inode, size, mtime and
+        // ctime, still ours, 0600, one link, in our 0700 folder; and the same source file as when it was made.
         if let r = loadRecord(), r.source == path, r.sourceStamp == stamp0, m.version(for: r.sha256) != nil,
-           VerificationCache.stamp(copy) == r.copyStamp {
-            return PinnedModel(path: copy)
+           let now = try? checkPrivate(copy), now == r.copyStamp {
+            return PinnedModel(path: copy, stamp: now)
         }
 
         removeIncoming(in: f)
         let incoming = f.appendingPathComponent("incoming-\(UUID().uuidString).gguf").path
         var sha: String
         if fclonefileat(fd, AT_FDCWD, incoming, 0) == 0 {
-            chmod(incoming, 0o600)
-            let trusted = !FolderTrust.isWritableByOthers(path)
-            if trusted, let cached = VerificationCache.shared.lookup(path, stamp: stamp0), m.version(for: cached) != nil,
-               VerificationCache.stamp(fd: fd) == stamp0 {
-                sha = cached.lowercased()
-            } else {
-                do { sha = try FileHash.sha256(incoming) } catch { unlink(incoming); throw error }
-            }
+            // APFS clone (no extra space). Its content is always hashed: no cache, no trust in the source's attributes.
+            let cfd = open(incoming, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+            guard cfd >= 0 else { unlink(incoming); throw SnapTransError("ModelCopyFailed", "clone") }
+            defer { close(cfd) }
+            do { sha = try hashPrivate(cfd) } catch { unlink(incoming); throw error }
         } else {
             // No clone (another volume, not APFS, SMB…): stream copy + hash in one pass.
             let rv = try? f.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey])
@@ -396,6 +412,7 @@ public enum PrivateModelCopy {
             guard out >= 0 else { throw SnapTransError("ModelCopyFailed", "create") }
             let dstH = FileHandle(fileDescriptor: out, closeOnDealloc: true)
             do {
+                guard fchmod(out, 0o600) == 0 else { throw SnapTransError("ModelCopyFailed", "chmod") }
                 var hasher = SHA256()
                 var done: Int64 = 0
                 try src.seek(toOffset: 0)
@@ -418,21 +435,29 @@ public enum PrivateModelCopy {
         guard m.version(for: sha) != nil else { unlink(incoming); throw SnapTransError("ExistingHashMismatch") }
         // The source's own cache entry only when it did not change while it was read.
         if VerificationCache.stamp(fd: fd) == stamp0 { VerificationCache.shared.record(path, stamp: stamp0, sha256: sha) }
-        guard rename(incoming, copy) == 0, let copyStamp = VerificationCache.stamp(copy) else {
-            unlink(incoming); throw SnapTransError("ModelCopyFailed", "rename")
-        }
+        guard rename(incoming, copy) == 0 else { unlink(incoming); throw SnapTransError("ModelCopyFailed", "rename") }
+        let copyStamp = try checkPrivate(copy)
         let rec = Record(source: path, sourceStamp: stamp0, sha256: sha, copyStamp: copyStamp)
-        if let u = recordURL, let d = try? JSONEncoder().encode(rec) { try? PrivateFiles.write(d, to: u) }
-        return PinnedModel(path: copy)
+        if let u = recordURL, let d = try? JSONEncoder().encode(rec) { try PrivateFiles.write(d, to: u) }
+        return PinnedModel(path: copy, stamp: copyStamp)
     }
 
     static func size(_ p: String) -> Int64? { var st = stat(); return stat(p, &st) == 0 ? Int64(st.st_size) : nil }
 }
 
-/// The model file an engine start uses: the verified private copy (see PrivateModelCopy).
+/// The model file an engine start uses: the verified private copy. Only PrivateModelCopy can create one, so the
+/// engine cannot be handed any other path (such as the file in the user's folder).
 public final class PinnedModel: @unchecked Sendable {
     public let path: String
-    init(path: String) { self.path = path }
+    let stamp: String
+    init(path: String, stamp: String) { self.path = path; self.stamp = stamp }
+
+    /// Right before the engine is spawned: still our regular file, 0600, one link, in our 0700 folder, and unchanged
+    /// (device, inode, size, mtime, ctime) since it was verified. Otherwise the engine is not started.
+    public func verifyForLaunch() throws {
+        guard try PrivateModelCopy.checkPrivate(path) == stamp else { throw SnapTransError("ModelCopyFailed", "changed") }
+    }
+
     /// Called once the engine has loaded the model (nothing to do for the persistent private copy).
     public func afterLoad() throws {}
 }
