@@ -1,6 +1,6 @@
 # MyPLaMo SnapTrans: build the distribution ZIP
 #   pwsh -File packaging\package.ps1                 (version from Directory.Build.props)
-#   pwsh -File packaging\package.ps1 -Version 1.0.0
+#   pwsh -File packaging\package.ps1 -Version 1.1.0
 #
 # Output (dist\):
 #   MyPLaMo-SnapTrans-<version>-win-x64.zip          top folder MyPLaMo-SnapTrans\ contains:

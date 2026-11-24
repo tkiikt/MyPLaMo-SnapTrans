@@ -1,5 +1,5 @@
-MyPLaMo SnapTrans {VERSION}
-==========================
+MyPLaMo SnapTrans v{VERSION} - Windows x64
+========================================
 
 [日本語]  (English below)
 
@@ -14,26 +14,31 @@ Built with PLaMo
 
 ■ 動作環境
 - Windows 10 (2004 以降) / Windows 11、64 ビット (x64)
-- メモリ 8 GB 以上を推奨。GPU（NVIDIA / AMD / Intel、Vulkan 対応）があれば高速ですが、CPU だけでも動きます。
+- メモリ 8 GB 以上を推奨（8B / 31B モデルはさらに必要）
+- GPU 任意（NVIDIA / AMD / Intel の Vulkan 対応 GPU で高速動作。NVIDIA GPU は設定から
+  CUDA エンジンも導入できます。GPU がなくても CPU のみで動作します）
 - モデルの保存に 0.6 GB〜（モデルの大きさによる）の空き容量。初回のダウンロードにインターネット接続。
 
-■ はじめかた
-1. ZIP を好きな場所（例: C:\Tools）に展開します。
+■ 使い方
+1. 必要に応じてダウンロードした ZIP の SHA-256 を .sha256 ファイルと照合し、好きな場所（例: C:\Tools）に展開します。
+   PowerShell での確認例:
+     Get-FileHash .\MyPLaMo-SnapTrans-{VERSION}-win-x64.zip -Algorithm SHA256
 2. MyPLaMo-SnapTrans フォルダーの MyPLaMo-SnapTrans.exe を起動します。
    インストール不要、管理者権限不要、.NET などの追加インストールも不要です。
    app フォルダーには本体とランタイム一式が入っています。消したり移動したりせず、
    フォルダーごと置いてください（app\MyPLaMo.SnapTrans.exe を直接起動しても同じです）。
 3. 初回は設定画面が開きます。PLaMo コミュニティライセンスを読み、同意にチェックを付けてから、
    翻訳モデルを「ダウンロード」します（まずは 0.8B か 2B）。モデルは PFN の Hugging Face から直接取得します。
-   この ZIP にモデルは入っていません。
+   この ZIP にモデルは同梱していません。
 4. Ctrl + Alt を押しながら、画面上の文字を左ドラッグで囲みます。離すと翻訳がポップアップで表示されます。
    - ドラッグ中に Esc でキャンセル。ポップアップは × か Esc で閉じます。
    - ポップアップのボタン: 原文⇄訳文の切り替え、コピー。
-5. 通知領域のアイコン: クリックで設定、右クリックで「設定を開く / 最後の翻訳を表示 /
-   ドラッグ翻訳を有効にする / 終了」。
+5. 通知領域（タスクトレイ）のアイコン: クリックで設定、右クリックで
+   「設定を開く / 最後の翻訳を表示 / ドラッグ翻訳を有効にする / 終了」。
+   終了するときはトレイメニューから「終了」を選んでください。
 
-■ 「Windows によって PC が保護されました」と表示されたら
-このアプリはコード署名されていないため、初回起動時に SmartScreen が
+■ 「Windows によって PC が保護されました」と表示されたら（SmartScreen）
+このアプリはコード署名されていないため、初回起動時に Microsoft Defender SmartScreen が
 「発行元: 不明」と警告することがあります。配布元を信頼できる場合は
 「詳細情報」→「実行」で起動できます。
 
@@ -46,26 +51,29 @@ Windows の［設定］→［時刻と言語］→［言語と地域］→［言
 - 設定・ログ・検証結果・CUDA エンジン・Tesseract の辞書:
     %LOCALAPPDATA%\MyPLaMo-SnapTrans
 - 翻訳モデル: 設定画面の「保存先」（既定は %LOCALAPPDATA%\MyPLaMo-SnapTrans\models）
-- アンインストール: 通知領域のアイコンから「終了」し、展開したフォルダーを削除します。
+- アンインストール: 通知領域のアイコンを右クリックして「終了」し、展開したフォルダーを削除します。
   データも消すときは、上の %LOCALAPPDATA%\MyPLaMo-SnapTrans フォルダーと、
   別の場所を保存先にした場合はそのフォルダーのモデル（*.gguf）を削除します。
 - レジストリには書き込みません。
 
-■ ライセンス
+■ モデルとライセンス
+- 翻訳モデル PLaMo 3 Translate はこの ZIP に同梱していません。利用者が設定画面で
+  PLaMo コミュニティライセンスに同意したうえで、PFN の Hugging Face から直接ダウンロードして使用します。
+  PLaMo コミュニティライセンス契約（Preferred Networks）:
+    日本語: https://plamo.preferredai.jp/info/plamo-community-license-ja
+    English: https://plamo.preferredai.jp/info/plamo-community-license-en
 - MyPLaMo SnapTrans 本体: MIT License（LICENSE.txt）
-- 翻訳モデル PLaMo 3 Translate: PLaMo コミュニティライセンス契約（Preferred Networks）
-    https://plamo.preferredai.jp/info/plamo-community-license-ja
-  モデルを使うには、このライセンスへの同意が必要です。
 - 同梱しているソフトウェア（llama.cpp、.NET、Windows App SDK、Visual C++ ランタイム、Tesseract など）:
   THIRD-PARTY-NOTICES.txt
   同梱している Microsoft のコンポーネント（Windows App SDK、.NET、Visual C++ ランタイムなど）は、
-  それぞれの Microsoft のライセンス条件に従います。
+  それぞれの Microsoft のライセンス条件に従います。MIT License は MyPLaMo SnapTrans 本体に
+  適用されるもので、これらのコンポーネントの条件を変えるものではありません。
 
 
 [English]
 
-MyPLaMo SnapTrans is a tray app that translates any text on your screen: drag a box around it and
-the translation pops up. Text recognition (OCR) and translation both run on this PC. Translation
+MyPLaMo SnapTrans is a system tray app that translates any text on your screen: drag a box around it and
+the translation pops up. Text recognition (OCR) and translation both run locally on this PC. Translation
 uses PLaMo 3 Translate, the translation model by Preferred Networks.
 
 An unofficial, independently developed app that uses the PLaMo 3 Translate model released by
@@ -75,29 +83,33 @@ Built with PLaMo
 
 * Requirements
 - Windows 10 (version 2004 or later) / Windows 11, 64-bit (x64)
-- 8 GB of memory or more recommended. A GPU (NVIDIA / AMD / Intel with Vulkan) makes it fast,
-  but it also runs on the CPU alone.
+- 8 GB of memory or more recommended (more for the 8B / 31B models)
+- GPU optional (fast on Vulkan-capable NVIDIA / AMD / Intel GPUs; NVIDIA GPUs can also install the
+  optional CUDA engine from Settings; runs on CPU alone as well)
 - 0.6 GB or more of free disk space for a model (depends on the model size), and an internet
   connection for the first download.
 
-* Getting started
-1. Extract the ZIP anywhere (for example C:\Tools).
+* Usage
+1. Optionally verify the downloaded ZIP against the .sha256 file, then extract it anywhere (for example C:\Tools).
+   PowerShell example:
+     Get-FileHash .\MyPLaMo-SnapTrans-{VERSION}-win-x64.zip -Algorithm SHA256
 2. Start MyPLaMo-SnapTrans.exe in the MyPLaMo-SnapTrans folder.
    No installation, no administrator rights, no .NET or other runtime to install.
    The app folder holds the program and its runtime. Do not delete or move it; keep the whole
    folder together (starting app\MyPLaMo.SnapTrans.exe directly works the same).
 3. The first time, Settings opens. Read the PLaMo Community License, tick the agreement, then
    "Download" a translation model (start with 0.8B or 2B). Models are downloaded directly from
-   PFN's Hugging Face repositories. This ZIP contains no model.
+   PFN's Hugging Face repositories. No model is bundled in this ZIP.
 4. Hold Ctrl + Alt and drag a box around text on the screen with the left mouse button.
    When you release it, the translation appears in a popup.
    - Esc cancels the drag. Close the popup with x or Esc.
    - Popup buttons: switch between original and translation, copy.
-5. Notification area icon: click for Settings; right-click for
+5. Notification area (system tray) icon: click for Settings; right-click for
    "Open settings / Show last translation / Enable drag-to-translate / Exit".
+   Choose "Exit" from the tray menu when you want to quit.
 
-* "Windows protected your PC"
-The app is not code-signed, so SmartScreen may warn "Unknown publisher" the first time.
+* "Windows protected your PC" (SmartScreen)
+The app is not code-signed, so Microsoft Defender SmartScreen may warn "Unknown publisher" the first time.
 If you trust where you got it from, click "More info" and then "Run anyway".
 
 * Better text recognition
@@ -111,17 +123,20 @@ The "Open Windows language settings" button in Settings takes you there.
     %LOCALAPPDATA%\MyPLaMo-SnapTrans
 - Translation models: the "Folder" setting in Settings
   (default %LOCALAPPDATA%\MyPLaMo-SnapTrans\models)
-- To uninstall, choose "Exit" from the notification area icon and delete the extracted folder.
+- To uninstall, right-click the notification area icon, choose "Exit", and delete the extracted folder.
   To remove your data as well, delete %LOCALAPPDATA%\MyPLaMo-SnapTrans and, if you chose
   another model folder, the models (*.gguf) in it.
 - Nothing is written to the registry.
 
-* Licenses
+* Models and licenses
+- The PLaMo 3 Translate model is NOT bundled in this ZIP. Users agree to the PLaMo Community License
+  in Settings and download the model directly from PFN's Hugging Face repositories.
+  PLaMo Community License Agreement (Preferred Networks):
+    English: https://plamo.preferredai.jp/info/plamo-community-license-en
+    Japanese: https://plamo.preferredai.jp/info/plamo-community-license-ja
 - MyPLaMo SnapTrans itself: MIT License (LICENSE.txt)
-- PLaMo 3 Translate model: PLaMo Community License Agreement (Preferred Networks)
-    https://plamo.preferredai.jp/info/plamo-community-license-en
-  You must agree to this license to use the model.
 - Bundled software (llama.cpp, .NET, Windows App SDK, Visual C++ runtime, Tesseract and others):
   THIRD-PARTY-NOTICES.txt
   The bundled Microsoft components (Windows App SDK, .NET, Visual C++ runtime and others) are
-  subject to their respective Microsoft license terms.
+  subject to their respective Microsoft license terms. The MIT License applies to MyPLaMo SnapTrans
+  itself and does not change the terms of those components.
