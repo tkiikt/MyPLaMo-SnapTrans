@@ -109,7 +109,7 @@ import Testing
         try Data(count: 10).write(to: URL(fileURLWithPath: store.path(of: m)))
         #expect(store.state(of: m) == .corrupt)   // size matches no official file
         // A file of the wrong size is never handed to the engine.
-        #expect(throws: SnapTransError.self) { try ModelStore.pinnedModel(m, path: store.path(of: m), privateFolder: dir.path) }
+        #expect(throws: SnapTransError.self) { PrivateModelCopy.folder = dir.appendingPathComponent("copy"); try ModelStore.pinnedModel(m, path: store.path(of: m)) }
     }
 
     @Test func privateFiles() throws {

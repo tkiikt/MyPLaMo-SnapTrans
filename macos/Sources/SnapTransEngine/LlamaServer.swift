@@ -39,8 +39,8 @@ public struct EngineLocator: Sendable {
     public var serverPath: String { (engineFolder as NSString).appendingPathComponent("llama-server") }
 }
 
-/// The model file handed to the engine: a verified, owner-only copy (see ModelStore.pinnedModel).
-public typealias ModelPreparer = @Sendable (_ privateFolder: String) throws -> PinnedModel
+/// The model file handed to the engine: the verified, owner-only copy (see PrivateModelCopy).
+public typealias ModelPreparer = @Sendable (_ runFolder: String) throws -> PinnedModel
 
 /// One llama-server child process listening on a Unix domain socket in a fresh owner-only (0700) folder, with a random
 /// API key (passed through the environment, never the command line). It runs under snaptrans-engine-guard so it never
@@ -54,6 +54,9 @@ public final class LlamaServer: @unchecked Sendable {
     var socketPath = ""
     var apiKey = ""
     var pinned: PinnedModel?
+    /// kqueue with an EVFILT_PROC/NOTE_EXIT knote on the tracked child, registered while it was identified. The knote
+    /// belongs to that process, not to its PID number: as long as it has not fired, the PID still names our child.
+    var exitWatch: Int32 = -1
     let stderrState = StderrState()
     public private(set) var loaded: LoadedEngine?
     public var diagnostic: (@Sendable (String) -> Void)?
@@ -91,8 +94,17 @@ public final class LlamaServer: @unchecked Sendable {
             if g.isRunning { g.terminate(); g.waitUntilExit() }
             guardProcess = nil
         }
-        // Only the tracked child itself (same PID *and* start time, now orphaned) is ever killed here.
-        if let s = server, s.isAlive, PortOwner.parent(of: s.pid) == 1 { kill(s.pid, SIGKILL) }
+        // The guard reaps llama-server before it exits (its own child: the PID cannot be reused before waitpid), so
+        // normally nothing is left. Only if the guard died abnormally can an orphan remain: it is killed only while
+        // its NOTE_EXIT knote has not fired (the process registered at start has not exited, so the PID is still its)
+        // and its start time still matches.
+        if let s = server, exitWatch >= 0 {
+            var ev = kevent()
+            var zero = timespec(tv_sec: 0, tv_nsec: 0)
+            let n = kevent(exitWatch, nil, 0, &ev, 1, &zero)
+            if n == 0, s.isAlive { kill(s.pid, SIGKILL) }
+        }
+        if exitWatch >= 0 { close(exitWatch); exitWatch = -1 }
         server = nil
         pinned = nil
         if let dir = runFolder { try? FileManager.default.removeItem(atPath: dir) }
@@ -115,7 +127,7 @@ public final class LlamaServer: @unchecked Sendable {
                     loaded = l; return l
                 } catch let e as SnapTransError {
                     if Task.isCancelled { throw CancellationError() }
-                    if e.code == "ExistingHashMismatch" || e.code == "EngineTampered" || e.code == "ModelMissing" { throw e }
+                    if ["ExistingHashMismatch", "EngineTampered", "ModelMissing", "ModelCopyNoSpace", "ModelCopyFailed"].contains(e.code) { throw e }
                     reason = e.code + (e.args.isEmpty ? "" : ": " + e.args.joined(separator: " "))
                     diagnostic?("Metal load failed: \(e.safeDescription); falling back to CPU")
                     stopProcess()
@@ -227,6 +239,15 @@ public final class LlamaServer: @unchecked Sendable {
               let exe = PortOwner.executablePath(of: pid),
               URL(fileURLWithPath: exe).resolvingSymlinksInPath().path == URL(fileURLWithPath: locator.serverPath).resolvingSymlinksInPath().path
         else { throw SnapTransError("EngineUnexpectedResponse", "pid") }
+        let kq = kqueue()
+        guard kq >= 0 else { throw SnapTransError("EngineExited", 0, "kqueue") }
+        _ = fcntl(kq, F_SETFD, FD_CLOEXEC)
+        var watch = kevent(ident: UInt(pid), filter: Int16(EVFILT_PROC), flags: UInt16(EV_ADD | EV_ONESHOT), fflags: NOTE_EXIT, data: 0, udata: nil)
+        // Registered before the identity is re-checked: if it is still the same process now, the knote is on it.
+        guard kevent(kq, &watch, 1, nil, 0, nil) == 0, ProcessIdentity.of(pid) == ident else {
+            close(kq); throw SnapTransError("EngineUnexpectedResponse", "pid")
+        }
+        exitWatch = kq
         server = ident
         socketPath = sock
 

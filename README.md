@@ -158,7 +158,7 @@ MyPLaMo SnapTrans は、画面の文字をドラッグで囲むと、その場�
 
 - **ローカル完結**: OCR・翻訳ともに PC / Mac 内で処理し、翻訳対象や訳文を外部送信しません。
 - **llama-server の分離**: Windows 版は `127.0.0.1` のランダムポート＋セッションごとの API キー（送信前に待受プロセスを照合）、macOS 版は所有者専用（`0700`）フォルダーの Unix ドメインソケット＋接続ごとの相手 PID 照合・セッションごとの API キーで通信します。
-- **完全性検証**: 翻訳モデルや推論エンジンは SHA-256 を検証して使用します（macOS 版は起動直前に検証済みモデルを所有者専用の起動用フォルダーへコピーして読み込みます）。
+- **完全性検証**: 翻訳モデルや推論エンジンは SHA-256 を検証して使用します（macOS 版は、保存先にかかわらず、検証済みモデルの所有者専用コピー（`~/Library/Application Support/MyPLaMo-SnapTrans/engine-model`）から読み込みます。Mac 本体の APFS 上のモデルは容量を使わないクローン、別のディスクや共有フォルダー上のモデルはモデル 1 つ分の空き容量を使うコピーで、空きが足りなければ理由を表示して読み込みません）。
 - **プライバシーに配慮したログ**: 診断ログには時刻・処理時間・言語・文字数・エラー種別などのみを記録し、読み取った本文・訳文・個人パス・認証トークンは出力しません。
 
 ---
@@ -320,7 +320,7 @@ This app is not signed with an Apple Developer ID or notarized (distributed with
 
 - **Fully local**: Both OCR and translation run locally on your machine; source text and translations are never sent over the network.
 - **Isolated llama-server**: On Windows, `llama-server` binds to a random port on `127.0.0.1` with a per-session API key (verifying the listening process before sending). On macOS, it listens on a Unix domain socket inside an owner-only (`0700`) directory, checking the peer PID on every connection along with a per-session API key.
-- **Integrity checks**: Translation models and inference engines are verified via SHA-256 (on macOS, the verified model is copied into an owner-only launch folder before loading).
+- **Integrity checks**: Translation models and inference engines are verified via SHA-256 (on macOS, the engine always loads an owner-only verified copy of the model in `~/Library/Application Support/MyPLaMo-SnapTrans/engine-model`, whatever the model folder: a space-free clone for models on the Mac's APFS volume, a full copy for models on another disk or a shared folder, which needs free space for one more model; without it the reason is shown and the model is not loaded).
 - **Privacy-conscious logging**: Logs record only timestamps, timings, languages, character counts, and error kinds—never recognized text, translations, personal file paths, or API tokens.
 
 ---

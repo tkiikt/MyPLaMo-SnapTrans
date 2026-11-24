@@ -280,68 +280,159 @@ public struct ModelStore: Sendable {
             try FileManager.default.removeItem(atPath: p)
         }
         VerificationCache.shared.forget(path(of: m))
+        PrivateModelCopy.forget(source: path(of: m))
     }
 
-    /// Runs right before each engine start and returns the file the engine must open: the model is opened once
-    /// (no symlinks) and cloned through that descriptor into `privateFolder` (owner-only, 0700), so the engine reads a
-    /// copy nobody else can change. The copy is accepted when the opened file is unchanged since a cached official hash
-    /// (in a folder only this user can write) or when the copy itself hashes to an official version. Where cloning is
-    /// not possible (another volume, not APFS), the verified original is used and must still be the same file, with
-    /// the same stamp, once the engine has loaded it.
-    public static func pinnedModel(_ m: ModelInfo, path: String, privateFolder: String) throws -> PinnedModel {
-        let fd = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
-        guard fd >= 0 else { throw SnapTransError(errno == ELOOP ? "ExistingHashMismatch" : "ModelMissing") }
-        let h = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
-        var st = stat()
-        guard fstat(fd, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { throw SnapTransError("ExistingHashMismatch") }
-        guard m.isKnownSize(Int64(st.st_size)) else { throw SnapTransError("ExistingHashMismatch") }
-        let stamp0 = VerificationCache.stamp(st)
-        let trustedFolder = !FolderTrust.isWritableByOthers(path)
-        func cachedOK(_ stamp: String) -> Bool {
-            trustedFolder && VerificationCache.shared.lookup(path, stamp: stamp).flatMap { m.version(for: $0) } != nil
-        }
-        let copy = (privateFolder as NSString).appendingPathComponent("model.gguf")
-        if fclonefileat(fd, AT_FDCWD, copy, 0) == 0 {
-            chmod(copy, 0o600)
-            if cachedOK(stamp0), VerificationCache.stamp(fd: fd) == stamp0 { return PinnedModel(path: copy, isCopy: true, handle: nil, original: path, stamp: stamp0) }
-            let sha = try FileHash.sha256(copy)
-            guard m.version(for: sha) != nil else { unlink(copy); throw SnapTransError("ExistingHashMismatch") }
-            if VerificationCache.stamp(fd: fd) == stamp0 { VerificationCache.shared.record(path, stamp: stamp0, sha256: sha) }
-            return PinnedModel(path: copy, isCopy: true, handle: nil, original: path, stamp: stamp0)
-        }
-        if !cachedOK(stamp0) {
-            let sha = try FileHash.sha256(handle: h)
-            guard m.version(for: sha) != nil, VerificationCache.stamp(fd: fd) == stamp0 else { throw SnapTransError("ExistingHashMismatch") }
-            VerificationCache.shared.record(path, stamp: stamp0, sha256: sha)
-        }
-        return PinnedModel(path: path, isCopy: false, handle: h, original: path, stamp: stamp0)
+    /// The file the engine must open for model `m` at `path`: always the owner-only verified copy (PrivateModelCopy),
+    /// never the file in the user's folder.
+    public static func pinnedModel(_ m: ModelInfo, path: String) throws -> PinnedModel {
+        try PrivateModelCopy.prepare(m, path: path)
     }
 }
 
-/// The model file an engine start uses (see ModelStore.pinnedModel).
-public final class PinnedModel: @unchecked Sendable {
-    public let path: String
-    let isCopy: Bool
-    var handle: FileHandle?
-    let original: String
-    let stamp: String
+/// The verified, owner-only copy of the selected model that the engine reads, whatever the model folder is (APFS,
+/// another volume, exFAT, SMB, a folder others can write…). It lives in `folder` (the app's own
+/// ~/Library/Application Support/MyPLaMo-SnapTrans/engine-model, 0700) as model.gguf (0600), with a record of the
+/// source file (path + size/mtime/inode stamp) and the SHA-256 of the copy's bytes.
+///
+/// Making a copy: the source is opened once (no symlinks) and
+///   - cloned through that descriptor (APFS, same volume: instant, no extra space), then the clone is hashed, unless
+///     the source is unchanged since a cached official hash in a folder only this user can write; or
+///   - streamed through that descriptor into the copy while hashing the same bytes (one read of the source; needs free
+///     space for one more model on the app's volume, checked first: ModelCopyNoSpace otherwise).
+/// Only a copy whose bytes hash to an official version is kept. The engine then never reads the user's folder, so a
+/// file replaced there after the check is never used. While the source keeps the same stamp the existing copy is
+/// reused (no copying at every start); one copy is kept at a time and it is removed when the model is deleted in the
+/// app, replaced by another model's copy, or its source disappears (removeOrphan at start).
+public enum PrivateModelCopy {
+    nonisolated(unsafe) public static var folder: URL?
+    static let lock = NSLock()
+    /// Free space left over after a streamed copy.
+    public static let reserve: Int64 = 512 << 20
 
-    init(path: String, isCopy: Bool, handle: FileHandle?, original: String, stamp: String) {
-        self.path = path; self.isCopy = isCopy; self.handle = handle; self.original = original; self.stamp = stamp
+    struct Record: Codable { let source: String; let sourceStamp: String; let sha256: String; let copyStamp: String }
+
+    static var copyURL: URL? { folder?.appendingPathComponent("model.gguf") }
+    static var recordURL: URL? { folder?.appendingPathComponent("model.json") }
+
+    static func loadRecord() -> Record? {
+        guard let u = recordURL, let d = try? Data(contentsOf: u) else { return nil }
+        return try? JSONDecoder().decode(Record.self, from: d)
     }
 
-    /// Called once the engine has loaded the model: removes the private copy (the engine keeps its open mapping), or
-    /// for an uncopied original checks that the path still names the verified, unchanged file.
-    public func afterLoad() throws {
-        if isCopy { unlink(path); return }
-        defer { try? handle?.close(); handle = nil }
-        guard let h = handle, VerificationCache.stamp(fd: h.fileDescriptor) == stamp, VerificationCache.stamp(original) == stamp else {
-            throw SnapTransError("ExistingHashMismatch")
+    static func removeCopy() {
+        if let c = copyURL { unlink(c.path) }
+        if let r = recordURL { unlink(r.path) }
+    }
+
+    /// The model was deleted in the app: its copy goes too.
+    public static func forget(source: String) {
+        lock.lock(); defer { lock.unlock() }
+        if loadRecord()?.source == source { removeCopy() }
+    }
+
+    /// At start: remove a copy whose source no longer exists (deleted outside the app), and unfinished copies.
+    public static func removeOrphan() {
+        lock.lock(); defer { lock.unlock() }
+        guard let f = folder else { return }
+        if let r = loadRecord(), !FileManager.default.fileExists(atPath: r.source) { removeCopy() }
+        removeIncoming(in: f)
+    }
+
+    static func removeIncoming(in f: URL) {
+        for n in (try? FileManager.default.contentsOfDirectory(atPath: f.path)) ?? [] where n.hasPrefix("incoming-") {
+            unlink(f.appendingPathComponent(n).path)
         }
     }
 
-    deinit {
-        if isCopy { unlink(path) }
-        try? handle?.close()
+    static func gb(_ n: Int64) -> String { String(format: "%.2f GB", Double(n) / 1e9) }
+
+    public static func prepare(_ m: ModelInfo, path: String) throws -> PinnedModel {
+        guard let f = folder else { throw SnapTransError("ModelCopyFailed", "folder") }
+        lock.lock(); defer { lock.unlock() }
+        try PrivateFiles.ensureDirectory(f)
+        var dst = stat()
+        guard lstat(f.path, &dst) == 0, (dst.st_mode & S_IFMT) == S_IFDIR, dst.st_uid == getuid(), (dst.st_mode & 0o077) == 0 else {
+            throw SnapTransError("ModelCopyFailed", "folder")
+        }
+        let copy = copyURL!.path
+
+        let fd = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { throw SnapTransError(errno == ELOOP ? "ExistingHashMismatch" : "ModelMissing") }
+        let src = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        var st = stat()
+        guard fstat(fd, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { throw SnapTransError("ExistingHashMismatch") }
+        let size = Int64(st.st_size)
+        guard m.isKnownSize(size) else { throw SnapTransError("ExistingHashMismatch") }
+        let stamp0 = VerificationCache.stamp(st)
+
+        // Reuse: same source file (unchanged stamp) and our copy is still exactly what we wrote.
+        if let r = loadRecord(), r.source == path, r.sourceStamp == stamp0, m.version(for: r.sha256) != nil,
+           VerificationCache.stamp(copy) == r.copyStamp {
+            return PinnedModel(path: copy)
+        }
+
+        removeIncoming(in: f)
+        let incoming = f.appendingPathComponent("incoming-\(UUID().uuidString).gguf").path
+        var sha: String
+        if fclonefileat(fd, AT_FDCWD, incoming, 0) == 0 {
+            chmod(incoming, 0o600)
+            let trusted = !FolderTrust.isWritableByOthers(path)
+            if trusted, let cached = VerificationCache.shared.lookup(path, stamp: stamp0), m.version(for: cached) != nil,
+               VerificationCache.stamp(fd: fd) == stamp0 {
+                sha = cached.lowercased()
+            } else {
+                do { sha = try FileHash.sha256(incoming) } catch { unlink(incoming); throw error }
+            }
+        } else {
+            // No clone (another volume, not APFS, SMB…): stream copy + hash in one pass.
+            let rv = try? f.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey])
+            let important = rv?.volumeAvailableCapacityForImportantUsage ?? 0
+            let avail = important > 0 ? important : Int64(rv?.volumeAvailableCapacity ?? 0)
+            let reuse = (loadRecord() != nil ? (Self.size(copy) ?? 0) : 0)   // the old copy is replaced
+            let needed = size + reserve - reuse
+            if avail < needed { throw SnapTransError("ModelCopyNoSpace", gb(size), gb(max(0, needed - avail))) }
+            let out = open(incoming, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
+            guard out >= 0 else { throw SnapTransError("ModelCopyFailed", "create") }
+            let dstH = FileHandle(fileDescriptor: out, closeOnDealloc: true)
+            do {
+                var hasher = SHA256()
+                var done: Int64 = 0
+                try src.seek(toOffset: 0)
+                while true {
+                    try Task.checkCancellation()
+                    let chunk = autoreleasepool { src.readData(ofLength: 4 << 20) }
+                    if chunk.isEmpty { break }
+                    hasher.update(data: chunk)
+                    try dstH.write(contentsOf: chunk)
+                    done += Int64(chunk.count)
+                }
+                try dstH.synchronize()
+                try dstH.close()
+                guard done == size else { throw SnapTransError("ExistingHashMismatch") }
+                sha = hasher.finalize().map { String(format: "%02x", $0) }.joined()
+            } catch let e as SnapTransError { unlink(incoming); throw e }
+            catch is CancellationError { unlink(incoming); throw CancellationError() }
+            catch { unlink(incoming); throw SnapTransError("ModelCopyFailed", "write") }
+        }
+        guard m.version(for: sha) != nil else { unlink(incoming); throw SnapTransError("ExistingHashMismatch") }
+        // The source's own cache entry only when it did not change while it was read.
+        if VerificationCache.stamp(fd: fd) == stamp0 { VerificationCache.shared.record(path, stamp: stamp0, sha256: sha) }
+        guard rename(incoming, copy) == 0, let copyStamp = VerificationCache.stamp(copy) else {
+            unlink(incoming); throw SnapTransError("ModelCopyFailed", "rename")
+        }
+        let rec = Record(source: path, sourceStamp: stamp0, sha256: sha, copyStamp: copyStamp)
+        if let u = recordURL, let d = try? JSONEncoder().encode(rec) { try? PrivateFiles.write(d, to: u) }
+        return PinnedModel(path: copy)
     }
+
+    static func size(_ p: String) -> Int64? { var st = stat(); return stat(p, &st) == 0 ? Int64(st.st_size) : nil }
+}
+
+/// The model file an engine start uses: the verified private copy (see PrivateModelCopy).
+public final class PinnedModel: @unchecked Sendable {
+    public let path: String
+    init(path: String) { self.path = path }
+    /// Called once the engine has loaded the model (nothing to do for the persistent private copy).
+    public func afterLoad() throws {}
 }

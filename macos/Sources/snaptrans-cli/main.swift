@@ -15,12 +15,13 @@ let a = CommandLine.arguments
 func fail(_ s: String) -> Never { FileHandle.standardError.write((s + "\n").data(using: .utf8)!); exit(1) }
 func model(_ id: String) -> ModelInfo { guard let m = ModelInfo.find(id) else { fail("unknown model \(id)") }; return m }
 VerificationCache.shared.filePath = FileManager.default.temporaryDirectory.appendingPathComponent("snaptrans-cli-verify.json")
+PrivateModelCopy.folder = URL(fileURLWithPath: ProcessInfo.processInfo.environment["SNAPTRANS_CLI_COPY_DIR"] ?? FileManager.default.temporaryDirectory.appendingPathComponent("snaptrans-cli-model").path)
 
 func translator(_ id: String, _ folder: String, _ sel: String) -> PlamoTranslator {
     let t = PlamoTranslator(locator: .bundled())
     let m = model(id)
     let path = ModelStore(folder: folder).path(of: m)
-    t.configure(modelPath: path, selection: sel) { dir in try ModelStore.pinnedModel(m, path: path, privateFolder: dir) }
+    t.configure(modelPath: path, selection: sel) { _ in try ModelStore.pinnedModel(m, path: path) }
     t.diagnostic = { print("[engine] \($0)") }
     return t
 }

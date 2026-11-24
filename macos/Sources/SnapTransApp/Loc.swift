@@ -204,6 +204,8 @@ enum Loc {
         "Err_EngineNotLoaded": ("翻訳エンジンが起動していません。", "The translation engine is not running."),
         "Err_EngineTampered": ("推論エンジン（{0}）のファイルが公式版と一致しないため起動しませんでした（{1}）。アプリを入れ直してください。", "The inference engine ({0}) does not match the official files and was not started ({1}). Please reinstall the app."),
         "Err_EngineUnexpectedResponse": ("推論エンジンから想定外の応答がありました（{0}）。翻訳を中止しました。", "Unexpected response from the inference engine ({0}). Translation was stopped."),
+        "Err_ModelCopyNoSpace": ("確認済みのモデルのコピーを作る空き容量が足りません（モデル {0}、あと {1} 必要）。この保存先（別のディスクや共有フォルダーなど）のモデルは、アプリ用フォルダー（~/Library/Application Support/MyPLaMo-SnapTrans）に確認済みのコピーを作ってから読み込みます。Mac 本体の空き容量を増やすか、モデルの保存先を Mac 本体にしてください。", "Not enough free space for the verified copy of the model (model {0}, {1} more needed). Models in this folder (another disk, a shared folder…) are loaded from a verified copy in the app's folder (~/Library/Application Support/MyPLaMo-SnapTrans). Free up space on this Mac or keep the models on this Mac."),
+        "Err_ModelCopyFailed": ("確認済みのモデルのコピーを作れませんでした（{0}）。", "Could not create the verified copy of the model ({0})."),
         "Err_ModelMissing": ("モデルファイルがありません。", "The model file is missing."),
         "Err_CaptureDenied": ("画面収録の許可がないため、選んだ範囲を読み取れませんでした。設定画面の「macOS の許可」を確認してください。", "The selected area could not be read because Screen Recording is not allowed. See \"macOS permissions\" in Settings."),
         "Err_CaptureFailed": ("画面を取得できませんでした。", "The screen could not be captured."),

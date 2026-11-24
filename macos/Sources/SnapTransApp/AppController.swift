@@ -37,6 +37,8 @@ final class AppController: ObservableObject {
 
     init() {
         VerificationCache.shared.filePath = AppSettings.home.appendingPathComponent("verify-cache.json")
+        PrivateModelCopy.folder = AppSettings.home.appendingPathComponent("engine-model", isDirectory: true)
+        PrivateModelCopy.removeOrphan()
         settings = AppSettings.load()
         Loc.current = Loc.resolve(settings.language)
         translator.diagnostic = { m in AppLog.log("engine: " + m) }
@@ -172,7 +174,7 @@ final class AppController: ObservableObject {
     private func configureTranslator() {
         let m = activeModel
         let path = activeModelPath
-        translator.configure(modelPath: path, selection: settings.device, prepare: m.map { m in { dir in try ModelStore.pinnedModel(m, path: path, privateFolder: dir) } })
+        translator.configure(modelPath: path, selection: settings.device, prepare: m.map { m in { _ in try ModelStore.pinnedModel(m, path: path) } })
     }
 
     /// Hashes the selected model once if it is new or changed (cached), then optionally preloads.
