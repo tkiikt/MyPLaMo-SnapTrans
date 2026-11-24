@@ -41,15 +41,27 @@ Built with PLaMo
      ドラッグ翻訳を有効にする / 設定を開く… / MyPLaMo SnapTrans を終了」を選べます。
    - アプリを終了するときはメニューバーから「MyPLaMo SnapTrans を終了」を選んでください。
 
+■ ダウンロードしたファイルの確認（SHA-256）
+配布ページに載っている SHA-256（または同梱の .sha256 ファイル）と、
+ダウンロードした ZIP の値が一致するか確認できます。
+ターミナルで次を実行し、表示された 64 文字が配布ページの値と一致することを確かめてください:
+  shasum -a 256 ~/Downloads/MyPLaMo-SnapTrans-{VERSION}-macos-arm64.zip
+同じフォルダーに .sha256 ファイルがある場合は、次でも照合できます:
+  shasum -a 256 -c MyPLaMo-SnapTrans-{VERSION}-macos-arm64.zip.sha256
+一致しない場合は ZIP を開かずに削除し、配布ページからダウンロードし直してください。
+
 ■ 署名なし Mac アプリの開き方
-このアプリは Apple の公証（Notarization）および Developer ID による配布署名を受けていないため、
-初回起動時に「開発元を検証できません」などの警告が表示されます。
-配布元を信頼できる場合は、次の手順で開けます:
-  「システム設定」→「プライバシーとセキュリティ」→ 下の方の「このまま開く」
+このアプリは Apple の公証（Notarization）および Developer ID による配布署名を行っていません
+（配布用ビルドは ad hoc 署名＋Hardened Runtime）。初回起動時に「開発元を検証できません」
+「開けません」などの警告が表示されます。配布元を信頼できる場合は、次の手順で開けます:
+  「システム設定」→「プライバシーとセキュリティ」→ 下の方の「このまま開く」→ 確認画面で「開く」
 
 ■ 必要な許可
 設定画面の「macOS の許可」で許可状態を確認できます。許可は「システム設定」→
 「プライバシーとセキュリティ」で行います。変更が反映されないときはアプリを再起動してください。
+※ ad hoc 署名のためビルドごとにコード ID が変わります。更新版をインストールしたときは、
+  システム設定で「画面収録」「アクセシビリティ」の許可を付け直してください
+  （一度オフ→オン、または一覧から「-」で削除して追加し直す）。
 - 画面収録: 選んだ範囲の文字を読み取るために必要です。
 - アクセシビリティ: Control + Shift を押しながらのドラッグを受け取るために必要です。
   （アクセシビリティを許可しない場合でも、Control + Shift + T またはメニューの「範囲を翻訳」で翻訳できます。）
@@ -120,14 +132,25 @@ Preferred Networks, Inc. It is not provided, endorsed, or affiliated with Prefer
      Enable Drag-to-Translate / Open Settings... / Quit MyPLaMo SnapTrans".
    - To exit, choose "Quit MyPLaMo SnapTrans" from the menu bar icon.
 
+* Verifying the download (SHA-256)
+Compare the SHA-256 of the downloaded ZIP with the value published on the release page
+(or with the accompanying .sha256 file):
+  shasum -a 256 ~/Downloads/MyPLaMo-SnapTrans-{VERSION}-macos-arm64.zip
+Or, with the .sha256 file in the same folder:
+  shasum -a 256 -c MyPLaMo-SnapTrans-{VERSION}-macos-arm64.zip.sha256
+If the 64 characters differ, delete the ZIP without opening it and download it again.
+
 * Opening an unsigned macOS app
-This app is not notarized or signed with an Apple Developer ID, so macOS will warn that it
-cannot verify the developer on first launch. If you trust the source, open it via:
-  System Settings -> Privacy & Security -> click "Open Anyway" near the bottom
+This app is not notarized or signed with an Apple Developer ID (distributed with ad hoc signing
+and Hardened Runtime), so macOS will warn that it cannot verify the developer on first launch.
+If you trust the source, open it via:
+  System Settings -> Privacy & Security -> click "Open Anyway" near the bottom -> confirm "Open"
 
 * Required permissions
 Check permission status in Settings -> "macOS permissions", and manage them in
 System Settings -> Privacy & Security. Quit and reopen the app if a change does not take effect.
+Note: Because ad hoc signing changes the code identity with each build, re-grant Screen Recording
+and Accessibility after installing an update (toggle off/on, or remove with "-" and add again).
 - Screen Recording: Required to read text in the selected area.
 - Accessibility: Required to receive Control + Shift + drag.
   (Without Accessibility, Control + Shift + T and "Translate Area" from the menu still work.)

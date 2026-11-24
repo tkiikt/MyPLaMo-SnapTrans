@@ -29,8 +29,8 @@ MyPLaMo SnapTrans の macOS 版（Apple Silicon / arm64、メニューバー常�
 | `Sources/snaptrans-engine-guard` | `llama-server` の親ガードプロセス（アプリ終了・クラッシュ時に `llama-server` を確実に終了） |
 | `Sources/SnapTransApp` | AppKit + SwiftUI アプリ本体（メニューバーアイコン、`CGEventTap` 入力、選択枠オーバーレイ、ScreenCaptureKit、結果ポップアップ `NSPanel`、設定画面） |
 | `Sources/snaptrans-cli` | 開発用 CLI（ダウンロード・検証・OCR・翻訳・ベンチマーク、起動中アプリへのデバッグコマンド送信） |
-| `Packaging/` | `Info.plist`、配布 ZIP 用 `README-macOS.txt`、`THIRD-PARTY-NOTICES-macOS.header.txt` |
-| `scripts/` | `prepare-engine.sh`（固定版 llama.cpp 取得・照合）、`build-app.sh`（`.app`・ZIP・`.sha256` ビルド）、`install-dev.sh`、`create-dev-cert.sh`、`make-icon.swift` |
+| `Packaging/` | `Info.plist`、`engine.entitlements`、配布 ZIP 用 `README-macOS.txt`、`THIRD-PARTY-NOTICES-macOS.header.txt`、`licenses/` |
+| `scripts/` | `prepare-engine.sh`（固定版 llama.cpp 取得・照合）、`build-app.sh`（`.app`・ZIP・`.sha256` ビルド）、`make-zip.py`、`check-zip.py`、`install-dev.sh`、`create-dev-cert.sh`、`make-icon.swift` |
 | `Tests/SnapTransCoreTests` | コアおよびエンジン整合性のユニットテスト |
 
 ### ビルドとテスト
@@ -107,8 +107,8 @@ Developer guide for the macOS version of MyPLaMo SnapTrans (Apple silicon / arm6
 | `Sources/snaptrans-engine-guard` | Tiny parent guard for `llama-server` that terminates it whenever the app exits or crashes |
 | `Sources/SnapTransApp` | AppKit + SwiftUI app: status item, `CGEventTap` input, overlays, ScreenCaptureKit, result popup (`NSPanel`), Settings |
 | `Sources/snaptrans-cli` | Developer tool: download / verify / OCR / translate / benchmark, and debug commands for a running app |
-| `Packaging/` | `Info.plist`, distribution `README-macOS.txt`, `THIRD-PARTY-NOTICES-macOS.header.txt` |
-| `scripts/` | `prepare-engine.sh` (pinned llama.cpp), `build-app.sh` (`.app` + ZIP + `.sha256`), `install-dev.sh`, `create-dev-cert.sh`, `make-icon.swift` |
+| `Packaging/` | `Info.plist`, `engine.entitlements`, distribution `README-macOS.txt`, `THIRD-PARTY-NOTICES-macOS.header.txt`, `licenses/` |
+| `scripts/` | `prepare-engine.sh` (pinned llama.cpp), `build-app.sh` (`.app` + ZIP + `.sha256`), `make-zip.py`, `check-zip.py`, `install-dev.sh`, `create-dev-cert.sh`, `make-icon.swift` |
 | `Tests/SnapTransCoreTests` | Unit tests for core and engine integrity |
 
 ### Build and Test
