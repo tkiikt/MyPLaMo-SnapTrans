@@ -39,13 +39,13 @@ MyPLaMo SnapTrans は、画面の文字をドラッグで囲むと、その場�
 
 - **Windows（PowerShell）**:
   ```powershell
-  Get-FileHash .\MyPLaMo-SnapTrans-1.1.0-win-x64.zip -Algorithm SHA256
+  Get-FileHash .\MyPLaMo-SnapTrans-1.2.0-win-x64.zip -Algorithm SHA256
   ```
 - **macOS（ターミナル）**:
   ```bash
-  shasum -a 256 ~/Downloads/MyPLaMo-SnapTrans-1.1.0-macos-arm64.zip
+  shasum -a 256 ~/Downloads/MyPLaMo-SnapTrans-1.2.0-macos-arm64.zip
   # 同じフォルダーに .sha256 ファイルがある場合:
-  shasum -a 256 -c MyPLaMo-SnapTrans-1.1.0-macos-arm64.zip.sha256
+  shasum -a 256 -c MyPLaMo-SnapTrans-1.2.0-macos-arm64.zip.sha256
   ```
 
 値が一致しない場合は ZIP を開かずに削除し、Releases からダウンロードし直してください。
@@ -92,9 +92,10 @@ MyPLaMo SnapTrans は、画面の文字をドラッグで囲むと、その場�
 
 #### アンインストール（Windows）
 
-1. 通知領域のアイコンを右クリックして「**終了**」します。
-2. 展開した `MyPLaMo-SnapTrans` フォルダーを削除します。
-3. 設定・ログ・モデルなどのデータも消す場合は、`%LOCALAPPDATA%\MyPLaMo-SnapTrans` フォルダーと、別の場所を保存先にした場合はそのフォルダーのモデル（`*.gguf`）を削除します。レジストリには書き込みません。
+1. 「**サインイン時に起動する**」をオンにした場合は、アプリのフォルダーを削除（アンインストール）する前に設定画面でオフにしてください。オンのままフォルダーを移動したときは、次に起動したときに登録先が新しい場所に更新されます。
+2. 通知領域のアイコンを右クリックして「**終了**」します。
+3. 展開した `MyPLaMo-SnapTrans` フォルダーを削除します。
+4. 設定・ログ・モデルなどのデータも消す場合は、`%LOCALAPPDATA%\MyPLaMo-SnapTrans` フォルダーと、別の場所を保存先にした場合はそのフォルダーのモデル（`*.gguf`）を削除します。レジストリには「サインイン時に起動する」の登録以外は書き込みません。
 
 ---
 
@@ -135,9 +136,10 @@ MyPLaMo SnapTrans は、画面の文字をドラッグで囲むと、その場�
 
 #### アンインストール（macOS）
 
-1. メニューバーのアイコンから「**終了**」します。
-2. `MyPLaMo SnapTrans.app` を削除します。
-3. データも消す場合は、`~/Library/Application Support/MyPLaMo-SnapTrans` と、別の場所を保存先にした場合はそのフォルダーのモデル（`*.gguf`）を削除します。必要に応じて「システム設定」の「画面収録」「アクセシビリティ」一覧からも本アプリを削除してください。
+1. 「**ログイン時に起動する**」をオンにした場合は、アプリを削除する前に設定画面でオフにしてください。
+2. メニューバーのアイコンから「**終了**」します。
+3. `MyPLaMo SnapTrans.app` を削除します。
+4. データも消す場合は、`~/Library/Application Support/MyPLaMo-SnapTrans` と、別の場所を保存先にした場合はそのフォルダーのモデル（`*.gguf`）を削除します。必要に応じて「システム設定」の「画面収録」「アクセシビリティ」一覧からも本アプリを削除してください。
 
 ---
 
@@ -205,13 +207,13 @@ To verify the downloaded archive against its `.sha256` file:
 
 - **Windows (PowerShell)**:
   ```powershell
-  Get-FileHash .\MyPLaMo-SnapTrans-1.1.0-win-x64.zip -Algorithm SHA256
+  Get-FileHash .\MyPLaMo-SnapTrans-1.2.0-win-x64.zip -Algorithm SHA256
   ```
 - **macOS (Terminal)**:
   ```bash
-  shasum -a 256 ~/Downloads/MyPLaMo-SnapTrans-1.1.0-macos-arm64.zip
+  shasum -a 256 ~/Downloads/MyPLaMo-SnapTrans-1.2.0-macos-arm64.zip
   # Or with the .sha256 file in the same folder:
-  shasum -a 256 -c MyPLaMo-SnapTrans-1.1.0-macos-arm64.zip.sha256
+  shasum -a 256 -c MyPLaMo-SnapTrans-1.2.0-macos-arm64.zip.sha256
   ```
 
 If the hash does not match, delete the ZIP without opening it and download it again from Releases.
@@ -254,9 +256,10 @@ Because the app is not code-signed, Microsoft Defender SmartScreen may warn "Unk
 
 #### Uninstall (Windows)
 
-1. Right-click the tray icon and choose **Exit**.
-2. Delete the extracted `MyPLaMo-SnapTrans` folder.
-3. To remove data as well, delete `%LOCALAPPDATA%\MyPLaMo-SnapTrans` and any models (`*.gguf`) stored in a custom folder. Nothing is written to the Windows registry.
+1. If you turned on **Start at sign-in**, turn it off in Settings before deleting (uninstalling) the app folder. If you move the folder while it is on, the startup entry is updated to the new location the next time you start the app.
+2. Right-click the tray icon and choose **Exit**.
+3. Delete the extracted `MyPLaMo-SnapTrans` folder.
+4. To remove data as well, delete `%LOCALAPPDATA%\MyPLaMo-SnapTrans` and any models (`*.gguf`) stored in a custom folder. Nothing is written to the Windows registry except the **Start at sign-in** entry.
 
 ---
 
@@ -297,9 +300,10 @@ This app is not signed with an Apple Developer ID or notarized (distributed with
 
 #### Uninstall (macOS)
 
-1. Choose **Quit** from the menu bar icon.
-2. Delete `MyPLaMo SnapTrans.app`.
-3. To remove stored data as well, delete `~/Library/Application Support/MyPLaMo-SnapTrans` and any models (`*.gguf`) in a custom model folder. Optionally remove the app from **Screen Recording** and **Accessibility** in System Settings.
+1. If you turned on **Open at login**, turn it off in Settings before deleting the app.
+2. Choose **Quit** from the menu bar icon.
+3. Delete `MyPLaMo SnapTrans.app`.
+4. To remove stored data as well, delete `~/Library/Application Support/MyPLaMo-SnapTrans` and any models (`*.gguf`) in a custom model folder. Optionally remove the app from **Screen Recording** and **Accessibility** in System Settings.
 
 ---
 

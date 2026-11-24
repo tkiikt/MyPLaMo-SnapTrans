@@ -77,11 +77,12 @@ Built with PLaMo
 - 翻訳モデル（*.gguf）:
     設定画面の「保存先」（既定は ~/Library/Application Support/MyPLaMo-SnapTrans/models）
 - アンインストール方法:
-  1. メニューバーのアイコンから「MyPLaMo SnapTrans を終了」を選んでアプリを終了します。
-  2. 「MyPLaMo SnapTrans.app」（および展開したフォルダー）を削除します。
-  3. 設定・ログ・モデルも削除する場合は、~/Library/Application Support/MyPLaMo-SnapTrans フォルダーを
+  1. 「ログイン時に起動する」をオンにした場合は、先に設定画面でオフにします。
+  2. メニューバーのアイコンから「MyPLaMo SnapTrans を終了」を選んでアプリを終了します。
+  3. 「MyPLaMo SnapTrans.app」（および展開したフォルダー）を削除します。
+  4. 設定・ログ・モデルも削除する場合は、~/Library/Application Support/MyPLaMo-SnapTrans フォルダーを
      削除してください（別のフォルダーをモデルの保存先にした場合は、そのフォルダーの *.gguf も削除してください）。
-  4. 必要に応じて、「システム設定」→「プライバシーとセキュリティ」の「画面収録」「アクセシビリティ」の
+  5. 必要に応じて、「システム設定」→「プライバシーとセキュリティ」の「画面収録」「アクセシビリティ」の
      一覧から MyPLaMo SnapTrans を「-」で削除します。
 
 ■ モデルとライセンス
@@ -166,11 +167,12 @@ and Accessibility after installing an update (toggle off/on, or remove with "-" 
 - Translation models (*.gguf):
     The "Folder" set in Settings (default: ~/Library/Application Support/MyPLaMo-SnapTrans/models)
 - How to uninstall:
-  1. Choose "Quit MyPLaMo SnapTrans" from the menu bar icon.
-  2. Delete "MyPLaMo SnapTrans.app" (and the extracted folder).
-  3. To remove settings, logs, and models as well, delete ~/Library/Application Support/MyPLaMo-SnapTrans
+  1. If you turned on "Open at login", turn it off in Settings first.
+  2. Choose "Quit MyPLaMo SnapTrans" from the menu bar icon.
+  3. Delete "MyPLaMo SnapTrans.app" (and the extracted folder).
+  4. To remove settings, logs, and models as well, delete ~/Library/Application Support/MyPLaMo-SnapTrans
      (if you chose another model folder, delete the *.gguf files there too).
-  4. Optionally remove MyPLaMo SnapTrans from the Screen Recording and Accessibility lists
+  5. Optionally remove MyPLaMo SnapTrans from the Screen Recording and Accessibility lists
      in System Settings -> Privacy & Security using the "-" button.
 
 * Models and licenses
