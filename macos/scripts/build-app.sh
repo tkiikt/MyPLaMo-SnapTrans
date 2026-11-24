@@ -98,17 +98,23 @@ cp build/engine/LICENSE-llama.cpp "$APP/Contents/Resources/licenses/"
 cp ../LICENSE "$APP/Contents/Resources/licenses/LICENSE-MyPLaMo-SnapTrans.txt"
 
 # Build THIRD-PARTY-NOTICES.txt (included both in the ZIP root and inside the app bundle).
-# Packaging/licenses/: license texts of the third-party code built into the llama.cpp files (llama.cpp b12121 vendor/).
+# Packaging/licenses/: license texts of the third-party code built into the llama.cpp b12121 binaries.
 NOTICES="$ROOT/build/THIRD-PARTY-NOTICES.txt"
 VENDOR_LICENSES=(
-  "cpp-httplib.txt|cpp-httplib (libllama-common, libllama-server-impl) - MIT License"
+  "boringssl.txt|BoringSSL 0.20261020.0 (libllama-common, libllama-server-impl) - Apache License 2.0"
+  "fiat-crypto.txt|fiat-crypto (in BoringSSL 0.20261020.0 third_party/fiat) - Apache License 2.0"
+  "cpp-httplib.txt|cpp-httplib v0.64.0 (libllama-common, libllama-server-impl) - MIT License"
   "nlohmann-json.txt|JSON for Modern C++ 3.12.0, nlohmann/json (libllama-common, libllama-server-impl) - MIT License"
-  "xxhash.txt|xxHash (libllama-common, libllama-server-impl) - BSD 2-Clause License"
-  "rotate-bits.txt|rotate-bits (libllama-common, libllama-server-impl) - MIT License"
-  "sha1.txt|SHA-1 (libllama-common, libllama-server-impl) - public domain"
-  "sha256.txt|SHA-256 (libllama-common, libllama-server-impl) - public domain"
+  "xxhash.txt|xxHash (libllama-common, libllama-server-impl, libmtmd) - BSD 2-Clause License"
+  "rotate-bits.txt|rotate-bits (libllama-common, libllama-server-impl, libmtmd) - MIT License"
+  "sha1.txt|SHA-1 (libllama-common, libllama-server-impl, libmtmd) - public domain"
+  "sha256.txt|SHA-256 (libllama-common, libllama-server-impl, libmtmd) - public domain"
+  "base64-hpp.txt|base64.hpp (libllama-common, libllama-server-impl) - Unlicense (public domain)"
+  "llamafile-sgemm.txt|llamafile sgemm (libggml-cpu, Mozilla Foundation) - MIT License"
+  "ggml-metal-yarn.txt|YaRN RoPE Metal kernel (libggml-metal, Jeffrey Quesnelle and Bowen Peng) - MIT License"
   "stb_image.txt|stb_image 2.30 (libmtmd) - MIT License or public domain"
   "miniaudio.txt|miniaudio 0.11.26 (libmtmd) - public domain or MIT No Attribution"
+  "sheredom-subprocess.txt|sheredom/subprocess.h (libmtmd) - Unlicense (public domain)"
 )
 {
   sed "s/{VERSION}/$VERSION/g" Packaging/THIRD-PARTY-NOTICES-macOS.header.txt

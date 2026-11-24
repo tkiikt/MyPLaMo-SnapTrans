@@ -34,19 +34,37 @@ Components / 同梱しているもの
       llama-server, libllama-server-impl.dylib, libllama-common.0.dylib, libmtmd.0.dylib,
       libllama.0.dylib, libggml.0.dylib, libggml-cpu.0.dylib, libggml-blas.0.dylib,
       libggml-metal.0.dylib, libggml-rpc.0.dylib, libggml-base.0.dylib
-- Third-party code built into those llama.cpp files (from llama.cpp b12121 vendor/):
-    cpp-httplib (yhirose) - MIT License
+- Third-party code built into those llama.cpp files:
+    BoringSSL 0.20261020.0 (Google) - Apache License 2.0
+        libllama-common.0.dylib, libllama-server-impl.dylib
+    fiat-crypto (bundled in BoringSSL 0.20261020.0 third_party/fiat) - Apache License 2.0
+        libllama-common.0.dylib, libllama-server-impl.dylib
+    cpp-httplib v0.64.0 (yhirose) - MIT License
         libllama-common.0.dylib, libllama-server-impl.dylib
     JSON for Modern C++ 3.12.0 (nlohmann/json, Niels Lohmann) - MIT License
         libllama-common.0.dylib, libllama-server-impl.dylib
     xxHash (Yann Collet) - BSD 2-Clause License
-        libllama-common.0.dylib, libllama-server-impl.dylib
+        libllama-common.0.dylib, libllama-server-impl.dylib, libmtmd.0.dylib
     rotate-bits (William Casarin) - MIT License; SHA-1 (Steve Reid) - public domain;
     SHA-256 (Igor Pavlov) - public domain
+        libllama-common.0.dylib, libllama-server-impl.dylib, libmtmd.0.dylib
+    base64.hpp (llama.cpp common/base64.hpp) - Unlicense (public domain)
         libllama-common.0.dylib, libllama-server-impl.dylib
+    llamafile sgemm (Mozilla Foundation, ggml/src/ggml-cpu/llamafile/sgemm.cpp) - MIT License
+        libggml-cpu.0.dylib
+    YaRN RoPE Metal kernel (Jeffrey Quesnelle and Bowen Peng, ggml/src/ggml-metal/kernels/rope.metal) - MIT License
+        libggml-metal.0.dylib
     stb_image 2.30 (Sean Barrett) - MIT License or public domain
         libmtmd.0.dylib
     miniaudio 0.11.26 (David Reid) - public domain or MIT No Attribution
         libmtmd.0.dylib
-    (libmtmd and libggml-rpc are linked by llama-server and must be present, but SnapTrans never uses image/audio
-    input or RPC: it starts the server with --no-mmproj and without --rpc, and sends text to /completion only.)
+    sheredom/subprocess.h (Neil Henning) - Unlicense (public domain)
+        libmtmd.0.dylib
+    Note on unused bundled features / 未使用機能に関する注記:
+    - libmtmd and libggml-rpc are linked by llama-server and must be present, but SnapTrans never uses
+      image/audio input or RPC: it starts the server with --no-mmproj and without --rpc, and sends text to
+      /completion only.
+    - libllama-server-impl.dylib embeds prebuilt llama-ui WebUI static assets from llama.cpp b12121 tools/ui
+      (MIT License, incorporating bundled frontend packages such as Svelte, KaTeX, Mermaid, Highlight.js,
+      pdfjs-dist, DOMPurify, and Lucide). SnapTrans starts llama-server with --no-webui and never serves or
+      executes the WebUI.
