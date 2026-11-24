@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- llama-server only (Hardened Runtime). Its dylibs are ad hoc signed, i.e. without a Team ID, so library validation
+     would refuse them; this one exception lets it load its own @loader_path dylibs. DYLD_* variables stay blocked
+     (no allow-dyld-environment-variables), and the app checks every engine file against the manifest of the signed
+     bytes before starting it. No JIT / unsigned-memory exceptions are needed (Metal works without them). -->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

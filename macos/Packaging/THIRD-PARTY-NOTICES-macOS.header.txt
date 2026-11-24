@@ -34,5 +34,19 @@ Components / 同梱しているもの
       llama-server, libllama-server-impl.dylib, libllama-common.0.dylib, libmtmd.0.dylib,
       libllama.0.dylib, libggml.0.dylib, libggml-cpu.0.dylib, libggml-blas.0.dylib,
       libggml-metal.0.dylib, libggml-rpc.0.dylib, libggml-base.0.dylib
-    (llama.cpp also contains third-party code such as cpp-httplib and nlohmann/json under the MIT License;
-    see https://github.com/ggml-org/llama.cpp/tree/b12121/vendor)
+- Third-party code built into those llama.cpp files (from llama.cpp b12121 vendor/):
+    cpp-httplib (yhirose) - MIT License
+        libllama-common.0.dylib, libllama-server-impl.dylib
+    JSON for Modern C++ 3.12.0 (nlohmann/json, Niels Lohmann) - MIT License
+        libllama-common.0.dylib, libllama-server-impl.dylib
+    xxHash (Yann Collet) - BSD 2-Clause License
+        libllama-common.0.dylib, libllama-server-impl.dylib
+    rotate-bits (William Casarin) - MIT License; SHA-1 (Steve Reid) - public domain;
+    SHA-256 (Igor Pavlov) - public domain
+        libllama-common.0.dylib, libllama-server-impl.dylib
+    stb_image 2.30 (Sean Barrett) - MIT License or public domain
+        libmtmd.0.dylib
+    miniaudio 0.11.26 (David Reid) - public domain or MIT No Attribution
+        libmtmd.0.dylib
+    (libmtmd and libggml-rpc are linked by llama-server and must be present, but SnapTrans never uses image/audio
+    input or RPC: it starts the server with --no-mmproj and without --rpc, and sends text to /completion only.)
