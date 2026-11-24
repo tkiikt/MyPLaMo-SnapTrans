@@ -139,7 +139,7 @@ public enum FileHash {
 public struct ModelStore: Sendable {
     public let folder: String
     public init(folder: String) { self.folder = folder }
-    public static let userAgent = "MyPLaMo-SnapTrans/1.0 (macOS)"
+    public static let userAgent = "MyPLaMo-SnapTrans/1.1.0 (macOS)"
 
     public func path(of m: ModelInfo) -> String { (folder as NSString).appendingPathComponent(m.file) }
     func partPath(of m: ModelInfo) -> String { path(of: m) + ".part" }

@@ -1,92 +1,159 @@
-MyPLaMo SnapTrans {VERSION} for macOS
-=====================================
+MyPLaMo SnapTrans v{VERSION} - macOS (Apple Silicon / arm64)
+=========================================================
 
 [日本語]  (English below)
 
 画面の文字をドラッグで囲むと、その場で翻訳するメニューバー常駐アプリです。
-文字の読み取り（OCR）も翻訳も、すべてこの Mac の中で行います。翻訳には
-Preferred Networks の翻訳モデル PLaMo 3 Translate を使います。
+文字の読み取り（Apple Vision OCR）も翻訳も、すべてこの Mac の中で処理し、
+画面の内容や文章を外部に送信しません。翻訳には株式会社 Preferred Networks の
+翻訳モデル PLaMo 3 Translate を使用します。
+
+Built with PLaMo
 
 株式会社 Preferred Networks が公開した翻訳モデル「PLaMo 3 Translate」を使用する、
 個人開発の非公式アプリです。株式会社 Preferred Networks による提供・推奨・提携はありません。
 
-Built with PLaMo
-
 ■ 動作環境
-- macOS 15 以降、Apple シリコン（M1 以降）。
-- メモリ 8 GB 以上を推奨。Metal（GPU）で動きます。CPU のみにも切り替えられます。
-- モデルの保存に 0.6 GB〜の空き容量。初回のダウンロードにインターネット接続。
+- OS: macOS 15 以降、Apple シリコン（M1 以降 / arm64）
+- メモリ: 8 GB 以上を推奨（8B モデルは余裕のあるメモリ、31B モデルはユニファイドメモリ 32 GB 以上を推奨）
+- 実行デバイス: Metal（Apple シリコンの GPU）で動作します。設定で CPU のみに切り替えることもできます
+- ディスク: アプリ本体 約 35 MB、翻訳モデル 0.6 GB（0.8B）〜 19.5 GB（31B）
+- ネットワーク: 翻訳モデルのダウンロード時のみ必要
 
-■ はじめかた
-1. ZIP を展開し、「MyPLaMo SnapTrans.app」を「アプリケーション」フォルダーなどに移します。
-2. 起動します。Dock には出ず、メニューバーにアイコンが出ます。
-   このアプリは Apple の公証を受けていないため、初回は「開発元を検証できません」と表示されます。
-   配布元を信頼できる場合は、システム設定 →「プライバシーとセキュリティ」→ 下の方の
-   「このまま開く」で起動できます。
-3. 初回は設定画面が開きます。PLaMo コミュニティライセンスを読み、同意にチェックを付けてから、
-   翻訳モデルを「ダウンロード」します（まずは 0.8B か 2B）。モデルは PFN の Hugging Face から直接取得します。
-4. 許可（設定画面の「macOS の許可」で状態を確認できます）:
-   - 画面収録: 選んだ範囲の文字を読むために必要です。
-   - アクセシビリティ: Control + Shift を押しながらのドラッグを受け取るために必要です。
-   許可はシステム設定 →「プライバシーとセキュリティ」で行います。変更が反映されないときはアプリを再起動します。
-   画面収録を許可した後の最初の翻訳で、macOS が「システムプライベートウインドウピッカーをバイパスして画面と
-   オーディオに直接アクセスすることが要求されています」と確認します。「許可」で続きます。macOS の仕様で、
-   この確認はおおむね毎月出ます（アプリからは止められません）。音声は取得しません。
-5. Control + Shift を押しながら、画面上の文字を左ドラッグで囲みます。離すと翻訳がポップアップで表示されます。
-   - ドラッグ中に Esc でキャンセル。ポップアップは × か Esc で閉じます。ポップアップはドラッグで動かせます。
-   - ポップアップのボタン: 原文⇄訳文の切り替え、コピー。
-   - アクセシビリティを許可しない場合も、メニューの「範囲を翻訳」か Control + Shift + T で範囲を選べます。
-   - ほかのアプリとキーの組み合わせがぶつかるときは、設定画面の「ショートカット」で変えられます。
-     （Control + Option は VoiceOver や一部の音声入力アプリが使うため、既定にしていません。）
-6. メニューバーのアイコン: クリックで設定、右クリックで「範囲を翻訳 / 最後の翻訳を表示 /
-   ドラッグ翻訳を有効にする / 設定を開く / 終了」。
+■ 使い方
+1. ZIP を展開し、「MyPLaMo SnapTrans.app」をそのまま起動するか、
+   「アプリケーション」（/Applications）フォルダーに移動して起動します。
+   Dock には出ず、メニューバーにアイコンが表示されます。
+2. 初回は設定画面が開きます。PLaMo コミュニティライセンスを確認して同意にチェックを付け、
+   翻訳モデルをダウンロードします（まずは 0.8B か 2B がおすすめです）。
+   この ZIP にモデルは同梱していません。モデルは PFN の Hugging Face から直接ダウンロードします。
+3. 必要な許可（「画面収録」「アクセシビリティ」）を付与します（下の「必要な許可」を参照）。
+4. 翻訳する:
+   - Control + Shift を押しながら画面上の文字を左ドラッグで囲むと、離したときに翻訳ポップアップが表示されます。
+   - Control + Shift + T（またはメニューバーアイコン右クリック →「範囲を翻訳」）でも範囲選択を開始できます。
+   - ドラッグ中に Esc でキャンセルできます。ポップアップは × または Esc で閉じ、ドラッグで移動できます。
+   - ポップアップのボタンで原文⇄訳文の切り替え、コピーができます。
+   - ほかのアプリとキーの組み合わせが重なる場合は、設定画面の「ショートカット」で変更できます。
+     （Control + Option は VoiceOver や一部の音声入力アプリと重なるため既定にしていません。）
+5. メニューバーのアイコン:
+   - クリックで設定を開きます。
+   - 右クリック（または Control + クリック）で「範囲を翻訳 / 最後の翻訳を表示 /
+     ドラッグ翻訳を有効にする / 設定を開く… / MyPLaMo SnapTrans を終了」を選べます。
+   - アプリを終了するときはメニューバーから「MyPLaMo SnapTrans を終了」を選んでください。
+
+■ 署名なし Mac アプリの開き方
+このアプリは Apple の公証（Notarization）および Developer ID による配布署名を受けていないため、
+初回起動時に「開発元を検証できません」などの警告が表示されます。
+配布元を信頼できる場合は、次の手順で開けます:
+  「システム設定」→「プライバシーとセキュリティ」→ 下の方の「このまま開く」
+
+■ 必要な許可
+設定画面の「macOS の許可」で許可状態を確認できます。許可は「システム設定」→
+「プライバシーとセキュリティ」で行います。変更が反映されないときはアプリを再起動してください。
+- 画面収録: 選んだ範囲の文字を読み取るために必要です。
+- アクセシビリティ: Control + Shift を押しながらのドラッグを受け取るために必要です。
+  （アクセシビリティを許可しない場合でも、Control + Shift + T またはメニューの「範囲を翻訳」で翻訳できます。）
+- 画面収録の確認ダイアログについて:
+  画面収録を許可した後の最初の翻訳時、macOS が「システムプライベートウインドウピッカーをバイパスして
+  画面とオーディオに直接アクセスすることが要求されています」と確認します。「許可」で続行してください。
+  macOS の仕様により、この確認ダイアログはおおむね毎月表示されます（アプリ側からは止められません）。
+  なお、このアプリは音声を一切取得しません。
 
 ■ データの保存場所とアンインストール
-- 設定・ログ・検証結果: ~/Library/Application Support/MyPLaMo-SnapTrans
-- 翻訳モデル: 設定画面の「保存先」（既定は ~/Library/Application Support/MyPLaMo-SnapTrans/models）
-- アンインストール: メニューから「終了」し、アプリを削除します。データも消すときは上のフォルダーを削除し、
-  システム設定の「画面収録」「アクセシビリティ」の一覧から MyPLaMo SnapTrans を「-」で取り除きます。
+- 設定・ログ・検証結果:
+    ~/Library/Application Support/MyPLaMo-SnapTrans
+- 翻訳モデル（*.gguf）:
+    設定画面の「保存先」（既定は ~/Library/Application Support/MyPLaMo-SnapTrans/models）
+- アンインストール方法:
+  1. メニューバーのアイコンから「MyPLaMo SnapTrans を終了」を選んでアプリを終了します。
+  2. 「MyPLaMo SnapTrans.app」（および展開したフォルダー）を削除します。
+  3. 設定・ログ・モデルも削除する場合は、~/Library/Application Support/MyPLaMo-SnapTrans フォルダーを
+     削除してください（別のフォルダーをモデルの保存先にした場合は、そのフォルダーの *.gguf も削除してください）。
+  4. 必要に応じて、「システム設定」→「プライバシーとセキュリティ」の「画面収録」「アクセシビリティ」の
+     一覧から MyPLaMo SnapTrans を「-」で削除します。
 
-■ ライセンス
-- MyPLaMo SnapTrans 本体: MIT License（アプリ内 Contents/Resources/licenses）
-- 翻訳モデル PLaMo 3 Translate: PLaMo コミュニティライセンス契約（Preferred Networks）
-    https://plamo.preferredai.jp/info/plamo-community-license-ja
-- 推論エンジン llama.cpp b12121（MIT License、アプリに同梱）
+■ モデルとライセンス
+- 翻訳モデル PLaMo 3 Translate はこの配布物に含まれていません。モデルを利用するには、
+  PLaMo コミュニティライセンス契約への同意が必要です:
+    日本語: https://plamo.preferredai.jp/info/plamo-community-license-ja
+    English: https://plamo.preferredai.jp/info/plamo-community-license-en
+- MyPLaMo SnapTrans 本体: MIT License（同梱の LICENSE.txt を参照）
+- 同梱している第三者ソフトウェア（llama.cpp b12121 など）: 同梱の THIRD-PARTY-NOTICES.txt を参照
 
 
 [English]
 
-MyPLaMo SnapTrans is a menu bar app that translates any text on your screen: drag a box around it and the
-translation pops up. Text recognition (OCR) and translation both run on this Mac, using PLaMo 3 Translate,
-the translation model by Preferred Networks.
+MyPLaMo SnapTrans is a menu bar app for macOS that translates any text on your screen:
+drag a box around it and the translation pops up. Text recognition (Apple Vision OCR) and
+translation both run locally on this Mac; nothing on your screen is sent externally.
+Translation uses PLaMo 3 Translate by Preferred Networks, Inc.
+
+Built with PLaMo
 
 An unofficial, independently developed app that uses the PLaMo 3 Translate model released by
 Preferred Networks, Inc. It is not provided, endorsed, or affiliated with Preferred Networks, Inc.
 
-Built with PLaMo
+* Requirements
+- OS: macOS 15 or later, Apple silicon (M1 or later / arm64)
+- Memory: 8 GB or more recommended (more for 8B; 32 GB+ unified memory recommended for 31B)
+- Compute device: Runs on Metal (Apple silicon GPU); can also be switched to CPU only in Settings
+- Disk space: ~35 MB for the app; 0.6 GB (0.8B) to 19.5 GB (31B) for a translation model
+- Network: Required only when downloading translation models
 
-* Requirements: macOS 15 or later on Apple silicon; 8 GB of memory or more recommended; 0.6 GB or more of free
-  disk space for a model and an internet connection for the first download.
+* Usage
+1. Extract the ZIP and launch "MyPLaMo SnapTrans.app" directly, or move it to /Applications first.
+   It lives in the menu bar (no Dock icon).
+2. Settings opens on first launch. Read and agree to the PLaMo Community License, then download
+   a translation model (0.8B or 2B is recommended to start).
+   No model is bundled in this ZIP; models are downloaded directly from PFN's Hugging Face repositories.
+3. Grant the required macOS permissions (Screen Recording and Accessibility; see "Required permissions" below).
+4. Translate text on screen:
+   - Hold Control + Shift and left-drag around text; release to show the translation popup.
+   - Or press Control + Shift + T (or right-click the menu bar icon -> "Translate Area") to select an area.
+   - Press Esc while dragging to cancel. Close the popup with x or Esc, and drag the card to move it.
+   - Use the popup buttons to switch between original and translation, or copy text.
+   - If the shortcut conflicts with another app, change it in Settings -> Shortcut.
+     (Control + Option is not the default because VoiceOver and some dictation tools use it.)
+5. Menu bar icon:
+   - Left-click opens Settings.
+   - Right-click (or Control-click) opens the menu: "Translate Area / Show Last Translation /
+     Enable Drag-to-Translate / Open Settings... / Quit MyPLaMo SnapTrans".
+   - To exit, choose "Quit MyPLaMo SnapTrans" from the menu bar icon.
 
-* Getting started
-1. Unzip and move "MyPLaMo SnapTrans.app" to Applications. It lives in the menu bar (no Dock icon).
-   The app is not notarized, so macOS says it cannot verify the developer the first time. If you trust the source,
-   open System Settings → Privacy & Security and click "Open Anyway".
-2. Settings opens on first launch: read and accept the PLaMo Community License, then download a model
-   (0.8B or 2B to start). Models come directly from PFN's Hugging Face repositories.
-3. Permissions (status in Settings → macOS permissions): Screen Recording (to read the selected area) and
-   Accessibility (to receive Control + Shift + drag). Grant them in System Settings → Privacy & Security; restart
-   the app if a change does not take effect. On the first translation after that, macOS asks whether the app may
-   "bypass the system private window picker and directly access your screen and audio"; choose Allow. macOS repeats
-   this about once a month (the app cannot turn it off). No audio is ever captured.
-4. Hold Control + Shift and left-drag around text. Esc cancels; × or Esc closes the card; drag the card to move it.
-   Without Accessibility, use "Translate Area" in the menu or Control + Shift + T.
-   If another app uses the same keys, change them in Settings → Shortcut. (Control + Option is not the default
-   because VoiceOver and some dictation apps use it.)
+* Opening an unsigned macOS app
+This app is not notarized or signed with an Apple Developer ID, so macOS will warn that it
+cannot verify the developer on first launch. If you trust the source, open it via:
+  System Settings -> Privacy & Security -> click "Open Anyway" near the bottom
 
-* Data: settings, log and verification results in ~/Library/Application Support/MyPLaMo-SnapTrans; models in the
-  folder chosen in Settings. To uninstall, quit from the menu, delete the app and that folder, and remove the app
-  from the Screen Recording / Accessibility lists in System Settings.
+* Required permissions
+Check permission status in Settings -> "macOS permissions", and manage them in
+System Settings -> Privacy & Security. Quit and reopen the app if a change does not take effect.
+- Screen Recording: Required to read text in the selected area.
+- Accessibility: Required to receive Control + Shift + drag.
+  (Without Accessibility, Control + Shift + T and "Translate Area" from the menu still work.)
+- Monthly Screen Recording confirmation dialog:
+  On the first translation after granting Screen Recording, macOS asks whether the app may
+  "bypass the system private window picker and directly access your screen and audio"; choose Allow.
+  By macOS design, this confirmation dialog appears roughly once a month (the app cannot disable it).
+  No audio is ever captured.
 
-* Licenses: MyPLaMo SnapTrans – MIT; PLaMo 3 Translate – PLaMo Community License (Preferred Networks)
-  https://plamo.preferredai.jp/info/plamo-community-license-en ; llama.cpp b12121 – MIT (bundled).
+* Data locations and uninstalling
+- Settings, log, and verification results:
+    ~/Library/Application Support/MyPLaMo-SnapTrans
+- Translation models (*.gguf):
+    The "Folder" set in Settings (default: ~/Library/Application Support/MyPLaMo-SnapTrans/models)
+- How to uninstall:
+  1. Choose "Quit MyPLaMo SnapTrans" from the menu bar icon.
+  2. Delete "MyPLaMo SnapTrans.app" (and the extracted folder).
+  3. To remove settings, logs, and models as well, delete ~/Library/Application Support/MyPLaMo-SnapTrans
+     (if you chose another model folder, delete the *.gguf files there too).
+  4. Optionally remove MyPLaMo SnapTrans from the Screen Recording and Accessibility lists
+     in System Settings -> Privacy & Security using the "-" button.
+
+* Models and licenses
+- The PLaMo 3 Translate model is NOT bundled in this distribution. Using the model requires
+  agreeing to the PLaMo Community License Agreement:
+    English: https://plamo.preferredai.jp/info/plamo-community-license-en
+    Japanese: https://plamo.preferredai.jp/info/plamo-community-license-ja
+- MyPLaMo SnapTrans app: MIT License (see LICENSE.txt)
+- Bundled third-party software (llama.cpp b12121, etc.): see THIRD-PARTY-NOTICES.txt
