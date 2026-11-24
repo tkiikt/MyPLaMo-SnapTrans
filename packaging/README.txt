@@ -51,10 +51,13 @@ Windows の［設定］→［時刻と言語］→［言語と地域］→［言
 - 設定・ログ・検証結果・CUDA エンジン・Tesseract の辞書:
     %LOCALAPPDATA%\MyPLaMo-SnapTrans
 - 翻訳モデル: 設定画面の「保存先」（既定は %LOCALAPPDATA%\MyPLaMo-SnapTrans\models）
-- アンインストール: 通知領域のアイコンを右クリックして「終了」し、展開したフォルダーを削除します。
+- アンインストール: アンインストール前に設定画面で「サインイン時に起動する」をオフにし、
+  通知領域のアイコンを右クリックして「終了」してから、展開したフォルダーを削除します。
   データも消すときは、上の %LOCALAPPDATA%\MyPLaMo-SnapTrans フォルダーと、
   別の場所を保存先にした場合はそのフォルダーのモデル（*.gguf）を削除します。
-- レジストリには書き込みません。
+- レジストリは、設定画面で「サインイン時に起動する」をオンにしたときだけ
+  HKCU\Software\Microsoft\Windows\CurrentVersion\Run（値名 MyPLaMo SnapTrans）に書き込みます。
+  オフにすると削除されます（既定はオフ）。
 
 ■ モデルとライセンス
 - 翻訳モデル PLaMo 3 Translate はこの ZIP に同梱していません。利用者が設定画面で
@@ -123,10 +126,13 @@ The "Open Windows language settings" button in Settings takes you there.
     %LOCALAPPDATA%\MyPLaMo-SnapTrans
 - Translation models: the "Folder" setting in Settings
   (default %LOCALAPPDATA%\MyPLaMo-SnapTrans\models)
-- To uninstall, right-click the notification area icon, choose "Exit", and delete the extracted folder.
+- To uninstall: turn off "Start at sign-in" in Settings before uninstalling, right-click the
+  notification area icon, choose "Exit", and delete the extracted folder.
   To remove your data as well, delete %LOCALAPPDATA%\MyPLaMo-SnapTrans and, if you chose
   another model folder, the models (*.gguf) in it.
-- Nothing is written to the registry.
+- Nothing is written to the registry unless you turn on "Start at sign-in" in Settings, which adds
+  one value ("MyPLaMo SnapTrans") under HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+  (off by default; turning it off removes the value).
 
 * Models and licenses
 - The PLaMo 3 Translate model is NOT bundled in this ZIP. Users agree to the PLaMo Community License
