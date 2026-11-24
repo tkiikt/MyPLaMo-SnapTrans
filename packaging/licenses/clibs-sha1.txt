@@ -1,0 +1,4 @@
+clibs/sha1 (vendored in llama.cpp b12121, commit e1e2536fcf6a8f9703be8c85d58724b408552287)
+SHA-1 in C
+By Steve Reid <steve@edmweb.com>
+100% Public Domain

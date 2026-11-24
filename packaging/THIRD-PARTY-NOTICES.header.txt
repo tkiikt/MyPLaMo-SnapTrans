@@ -52,8 +52,25 @@ Components / 同梱しているもの
 - llama.cpp b12121 (ggml-org) - MIT License
     app\engine\cpu, app\engine\vulkan: llama-server.exe, llama.dll, llama-common.dll,
     llama-server-impl.dll, mtmd.dll, ggml.dll, ggml-base.dll, ggml-cpu-*.dll, ggml-vulkan.dll
-    (llama.cpp also contains third-party code such as cpp-httplib and nlohmann/json under the MIT License;
-    see https://github.com/ggml-org/llama.cpp/tree/b12121/vendor)
+    Statically linked / vendored components in llama.cpp b12121 (full licenses below):
+    - BoringSSL 0.20261020.0 (statically linked in llama-common.dll, llama-server-impl.dll) -
+      Apache License 2.0
+    - fiat-crypto (bundled in BoringSSL 0.20261020.0) - Apache License 2.0
+    - llamafile sgemm (ggml/src/ggml-cpu/llamafile/sgemm.cpp, Mozilla Foundation) - MIT License
+    - common/base64.hpp - The Unlicense (Public Domain)
+    - cpp-httplib v0.64.0 (Yuji Hirose) - MIT License
+    - nlohmann/json v3.12.0 (Niels Lohmann) - MIT License
+    - miniaudio (David Reid) - Public Domain (Unlicense) / MIT-0
+    - stb_image (Sean Barrett) - MIT License / Public Domain
+    - sheredom/subprocess.h (Neil Henning) - The Unlicense
+    - xxHash (Yann Collet) - BSD 2-Clause License
+    - rotate-bits.h (William Casarin) - MIT License
+    - sha256.c (Igor Pavlov / jb55) - Public Domain
+    - clibs/sha1 (Steve Reid) - Public Domain
+    - Embedded WebUI static assets in llama-server-impl.dll (disabled via --no-webui and unused by
+      MyPLaMo SnapTrans; originated from llama.cpp b12121 tools/ui [MIT] and its frontend packages
+      such as Svelte, KaTeX, Mermaid, Highlight.js, pdfjs-dist, DOMPurify, and Lucide)
+    (see https://github.com/ggml-org/llama.cpp/tree/b12121/vendor)
 - LLVM OpenMP runtime - Apache License 2.0 with LLVM Exceptions
     app\engine\*\libomp.dll
 - .NET runtime (Microsoft) - MIT License
@@ -63,8 +80,8 @@ Components / 同梱しているもの
     app\Microsoft.UI.*, Microsoft.Windows.*, Microsoft.WinUI.dll, Microsoft.InteractiveExperiences.*,
     WinRT.Runtime.dll, DWriteCore.dll, CoreMessagingXP.dll, MRM.dll, RestartAgent.exe, WinUIEdit.dll,
     *.pri, *.winmd, the language folders (xx-XX\*.mui) and the other Windows App SDK runtime files
-- Windows App SDK ML / Windows AI components (Microsoft): Microsoft.ML.OnnxRuntime.dll, onnxruntime.dll,
-    DirectML.dll and related files, part of the Windows App SDK runtime (not used by this app)
+- Windows App SDK ML / Microsoft Windows AI MachineLearning (Microsoft): Microsoft.ML.OnnxRuntime.dll,
+    onnxruntime.dll, DirectML.dll and related files, part of the Windows App SDK runtime (not used by this app)
 - Microsoft Edge WebView2 SDK (Microsoft): Microsoft.Web.WebView2.Core*.dll, WebView2Loader.dll
     (part of the Windows App SDK runtime, not used by this app)
 - Tesseract .NET wrapper 5.2.0 (Charles Weld) - Apache License 2.0: app\Tesseract.dll

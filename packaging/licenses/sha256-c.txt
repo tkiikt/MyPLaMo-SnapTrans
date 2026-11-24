@@ -1,0 +1,2 @@
+jb55/sha256.c (vendored in llama.cpp b12121, commit 5e637272c13f200872d55ff579f7e2ab6c3f252f)
+2010-06-11 : Igor Pavlov : Public domain
