@@ -152,6 +152,7 @@ $sections = [ordered]@{
     'rotate-bits.h (vendored in llama.cpp b12121, mtmd.dll) - MIT License' = Join-Path $lic 'rotate-bits.txt'
     'sha256.c (vendored in llama.cpp b12121, mtmd.dll) - Public Domain' = Join-Path $lic 'sha256-c.txt'
     'clibs/sha1 (vendored in llama.cpp b12121, mtmd.dll) - Public Domain' = Join-Path $lic 'clibs-sha1.txt'
+    'llama.cpp b12121 embedded WebUI (llama-server-impl.dll, disabled via --no-webui) - frontend third-party notices' = Join-Path $lic 'llama-ui-notices.txt'
     'LLVM OpenMP runtime (engine\*\libomp.dll) - Apache License 2.0 with LLVM Exceptions' = Join-Path $root 'engine\vulkan\LICENSE-LLVM-OpenMP'
     ".NET runtime $($runtimePack.Name) (System.*.dll, Microsoft.*.dll of .NET, coreclr.dll, hostfxr.dll ...) - MIT License" = Join-Path $runtimePack.FullName 'LICENSE.TXT'
     ".NET runtime $($runtimePack.Name) - third-party notices" = Join-Path $runtimePack.FullName 'THIRD-PARTY-NOTICES.TXT'

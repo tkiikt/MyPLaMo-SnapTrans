@@ -64,7 +64,15 @@ Components / 同梱しているもの
     - libmtmd and libggml-rpc are linked by llama-server and must be present, but SnapTrans never uses
       image/audio input or RPC: it starts the server with --no-mmproj and without --rpc, and sends text to
       /completion only.
-    - libllama-server-impl.dylib embeds prebuilt llama-ui WebUI static assets from llama.cpp b12121 tools/ui
-      (MIT License, incorporating bundled frontend packages such as Svelte, KaTeX, Mermaid, Highlight.js,
-      pdfjs-dist, DOMPurify, and Lucide). SnapTrans starts llama-server with --no-webui and never serves or
-      executes the WebUI.
+    - libllama-server-impl.dylib には llama.cpp b12121 の tools/ui（MIT License）からビルドされた
+      WebUI 静的アセットが埋め込まれています。SnapTrans は --no-webui 付きで llama-server を起動するため、
+      WebUI は無効であり配信・実行されません。埋め込まれている全 241 件のフロントエンド依存パッケージ・
+      著作権表示・NOTICE・公式ライセンス全文（PDF.js 5.4.54、KaTeX 0.18.11 および KaTeX Fonts [OFL-1.1]、
+      Mermaid、Highlight.js、DOMPurify、Dexie、Svelte/SvelteKit、Lucide、Workbox、Tailwind CSS、
+      同梱 JS ライブラリ等を含む）は、このファイルの後半の llama-ui セクションに収録しています。
+    - libllama-server-impl.dylib embeds prebuilt WebUI static assets from llama.cpp b12121 tools/ui
+      (MIT License). SnapTrans starts llama-server with --no-webui, so the WebUI is disabled and never
+      served or executed. The complete list of all 241 bundled frontend dependencies, copyrights, NOTICE
+      files, and full official license texts (including PDF.js 5.4.54, KaTeX 0.18.11 + KaTeX Fonts
+      [OFL-1.1], Mermaid, Highlight.js, DOMPurify, Dexie, Svelte/SvelteKit, Lucide, Workbox, Tailwind CSS,
+      and vendored JS libraries) is included in the llama-ui section below.

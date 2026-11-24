@@ -68,8 +68,11 @@ Components / 同梱しているもの
     - sha256.c (Igor Pavlov / jb55) - Public Domain
     - clibs/sha1 (Steve Reid) - Public Domain
     - Embedded WebUI static assets in llama-server-impl.dll (disabled via --no-webui and unused by
-      MyPLaMo SnapTrans; originated from llama.cpp b12121 tools/ui [MIT] and its frontend packages
-      such as Svelte, KaTeX, Mermaid, Highlight.js, pdfjs-dist, DOMPurify, and Lucide)
+      MyPLaMo SnapTrans; built from llama.cpp b12121 tools/ui [MIT] — complete list of all 241
+      bundled frontend dependencies, copyrights, NOTICE files, and full official license texts
+      including PDF.js 5.4.54, KaTeX 0.18.11 + KaTeX Fonts [OFL-1.1], Mermaid, Highlight.js,
+      DOMPurify, Dexie, Svelte/SvelteKit, Lucide, Workbox, Tailwind CSS, and vendored JS libraries
+      is included in the llama-ui section below)
     (see https://github.com/ggml-org/llama.cpp/tree/b12121/vendor)
 - LLVM OpenMP runtime - Apache License 2.0 with LLVM Exceptions
     app\engine\*\libomp.dll

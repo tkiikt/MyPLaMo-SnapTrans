@@ -128,6 +128,10 @@ VENDOR_LICENSES=(
     printf '==============================================================================\n\n'
     cat "Packaging/licenses/${entry%%|*}"
   done
+  printf '\n==============================================================================\n'
+  printf 'llama.cpp b12121 embedded WebUI (libllama-server-impl.dylib, disabled via --no-webui) - frontend third-party notices\n'
+  printf '==============================================================================\n\n'
+  cat "$REPO_ROOT/packaging/licenses/llama-ui-notices.txt"
 } > "$NOTICES"
 cp "$NOTICES" "$APP/Contents/Resources/licenses/THIRD-PARTY-NOTICES.txt"
 
