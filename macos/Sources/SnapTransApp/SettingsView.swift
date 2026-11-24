@@ -76,6 +76,7 @@ struct SettingsView: View {
                 translationCard.id("translation")
                 ocrCard.id("ocr")
                 appearanceCard.id("appearance")
+                startupCard.id("startup")
                 lastCard.id("last")
                 aboutCard.id("about")
             }
@@ -367,6 +368,26 @@ struct SettingsView: View {
                 Text(Loc.t("Theme_Light")).tag("light")
                 Text(Loc.t("Theme_Dark")).tag("dark")
             }.frame(maxWidth: 420)
+        }
+    }
+
+    // MARK: startup (login item; the switch shows SMAppService's live status, re-read on show and on activation)
+
+    var startupCard: some View {
+        Card(title: Loc.t("Sec_Startup")) {
+            Toggle(Loc.t("Startup_Login"), isOn: Binding(get: { app.loginItem == .on }, set: { app.setLoginItem($0) }))
+                .toggleStyle(.switch)
+                .accessibilityIdentifier("startup-login")
+            Note(Loc.t("Startup_Desc"))
+            if app.loginItem == .requiresApproval {
+                HStack(spacing: 10) {
+                    Text(Loc.t("Startup_Approval")).font(.system(size: 12)).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Button(Loc.t("Startup_OpenSettings")) { LoginItem.openSystemSettings() }
+                }
+            } else if app.loginItemFailed {
+                Text(Loc.t("Startup_Failed")).font(.system(size: 12)).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

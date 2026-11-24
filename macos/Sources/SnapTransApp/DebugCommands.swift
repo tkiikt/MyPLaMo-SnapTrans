@@ -9,7 +9,8 @@ import SnapTransCore
 ///   frame <x> <y> <w> <h>    show the passive selection frame over that rectangle (for screenshots); "frame off" hides it
 ///   idrag <x1> <y1> <x2> <y2> feed a drag into the interactive overlay (after "interactive"); "cancel-select" = Esc
 ///   interactive | last | menu | settings | quit
-///   scroll <section-id>      scroll Settings (model, device, shortcut, permissions, translation, ocr, appearance, last, about)
+///   login <on|off> | login-status   register/unregister the login item (SMAppService.mainApp), log its status
+///   scroll <section-id>      scroll Settings (model, device, shortcut, permissions, translation, ocr, appearance, startup, last, about)
 ///   lang <auto|ja-JP|en-US> | theme <system|light|dark> | device <auto|cpu> | model <id>
 @MainActor
 enum DebugCommands {
@@ -46,6 +47,8 @@ enum DebugCommands {
         case "last": app.showLast()
         case "menu": app.statusItem?.showMenu()
         case "settings": app.openSettings()
+        case "login" where p.count > 1: app.setLoginItem(p[1] == "on")
+        case "login-status": app.refreshLoginItem(); AppLog.log("login item status: \(app.loginItem)")
         case "close-settings": app.settingsWindow?.window.orderOut(nil)
         case "hide-popup": app.popup.hide()
         case "quit": app.quit()

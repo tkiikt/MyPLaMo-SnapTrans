@@ -161,6 +161,12 @@ enum Loc {
         "Ocr_En": ("英語", "English"),
 
         "Sec_Appearance": ("表示", "Appearance"),
+        "Sec_Startup": ("起動", "Startup"),
+        "Startup_Login": ("ログイン時に起動する（メニューバーに常駐）", "Open at login (stay in the menu bar)"),
+        "Startup_Desc": ("Mac にログインすると、設定画面を開かずにメニューバーに常駐した状態で起動します。システム設定の「一般」→「ログイン項目と機能拡張」からもオフにできます。", "When you log in to your Mac, SnapTrans starts in the menu bar without opening Settings. You can also turn this off in System Settings → General → Login Items & Extensions."),
+        "Startup_Approval": ("システム設定でオフになっています（許可が必要です）。ログイン時には起動しません。", "Turned off in System Settings (needs your approval). SnapTrans will not open at login."),
+        "Startup_OpenSettings": ("システム設定を開く", "Open System Settings"),
+        "Startup_Failed": ("ログイン項目を変更できませんでした。システム設定の「ログイン項目と機能拡張」を確認してください。", "Could not change the login item. Check System Settings → General → Login Items & Extensions."),
         "UiLanguage": ("表示言語", "Display language"),
         "UiLanguage_Auto": ("自動（macOS に合わせる）", "Automatic (match macOS)"),
         "Theme": ("テーマ", "Theme"),

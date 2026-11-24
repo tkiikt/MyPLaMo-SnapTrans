@@ -11,9 +11,9 @@
 # profile override are compiled out), build paths mapped out of the binaries, debug info split into dSYMs and stripped,
 # every Mach-O signed inside-out with the Hardened Runtime, the engine manifest regenerated from the final signed
 # bytes before the app is sealed, and a ZIP without Unix UID/GID fields, scanned for build-machine paths and names.
-#   Signature: ad hoc ("-") by default — the owner's decision for v1.1.0: no Developer ID, no notarization, so
+#   Signature: ad hoc ("-") by default — the owner's decision since v1.1.0: no Developer ID, no notarization, so
 #   Gatekeeper blocks the first launch and users open it via System Settings → Privacy & Security → Open Anyway.
-#   Optional, unused for v1.1.0: SNAPTRANS_SIGN_IDENTITY="Developer ID Application: …" signs with that identity and a
+#   Optional, unused so far: SNAPTRANS_SIGN_IDENTITY="Developer ID Application: …" signs with that identity and a
 #   secure timestamp; notarization (xcrun notarytool submit --wait, xcrun stapler staple, then re-create the ZIP) is
 #   not automated here. The self-signed "MyPLaMo SnapTrans Dev" identity is refused for distribution.
 # Development build (--dev): test hooks compiled in; signed with SNAPTRANS_SIGN_IDENTITY, else "MyPLaMo SnapTrans Dev"
@@ -35,7 +35,7 @@ case "${1:-}" in
   --dev) MODE=dev ;;
   *) echo "usage: $0 [--dev]" >&2; exit 64 ;;
 esac
-VERSION=${SNAPTRANS_VERSION:-1.1.0}
+VERSION=${SNAPTRANS_VERSION:-1.2.0}
 BUILD=${SNAPTRANS_BUILD:-$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 1)}
 APP="$ROOT/build/MyPLaMo SnapTrans.app"
 ZIP="$ROOT/build/MyPLaMo-SnapTrans-$VERSION-macos-arm64.zip"

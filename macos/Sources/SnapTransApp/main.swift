@@ -20,9 +20,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
+        // Read the launch Apple event now: it is only available while this launch is being handled.
+        let atLogin = LoginItem.launchedAtLogin()
         let c = AppController()
         controller = c
-        c.start()
+        c.start(atLogin: atLogin)
     }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply { .terminateNow }
     func applicationWillTerminate(_ n: Notification) { AppLog.log("terminate") }

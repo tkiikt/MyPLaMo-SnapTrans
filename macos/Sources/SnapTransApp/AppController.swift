@@ -20,6 +20,8 @@ final class AppController: ObservableObject {
     @Published private(set) var screenGranted = Permissions.screenRecording
     @Published private(set) var accessGranted = Permissions.accessibility
     @Published var hotKeyFailed = false
+    @Published private(set) var loginItem = LoginItem.state
+    @Published private(set) var loginItemFailed = false
     @Published var revision = 0          // bumps when model files may have changed
 
     let translator = PlamoTranslator(locator: .bundled())
@@ -50,9 +52,9 @@ final class AppController: ObservableObject {
 
     // MARK: lifecycle
 
-    func start() {
+    func start(atLogin: Bool = false) {
         let os = ProcessInfo.processInfo.operatingSystemVersion
-        AppLog.log("start \(Self.version) macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion)")
+        AppLog.log("start \(Self.version) macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion)\(atLogin ? " (login item)" : "") login item=\(loginItem)")
         applyTheme()
         statusItem = StatusItemController(app: self)
         input.onBegin = { [weak self] p in self?.selectionBegan(at: p) }
@@ -70,8 +72,14 @@ final class AppController: ObservableObject {
         let state = m.map { ModelStore(folder: settings.modelFolder).state(of: $0) } ?? .missing
         if [.ready, .outdated, .unverified].contains(state) {
             Task { await ensureVerified(preload: true) }
-        } else {
+        } else if !atLogin {
+            // Launched at login: menu bar only, even without a model (the user opens Settings from the menu).
             openSettings()
+        }
+        // The login item can be turned off (or need approval) in System Settings at any time: re-read it whenever
+        // the app becomes active (Settings opened, menu bar clicks) and when Settings is shown.
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshLoginItem() }
         }
         #if SNAPTRANS_TEST_HOOKS
         if ProcessInfo.processInfo.environment["SNAPTRANS_OPEN_SETTINGS"] == "1" { openSettings() }
@@ -149,6 +157,19 @@ final class AppController: ObservableObject {
     func applyHotKey() {
         hotKeyFailed = !hotKey.register(settings.hotKey)
         if hotKeyFailed { AppLog.log("hotkey: registration failed") }
+    }
+
+    func refreshLoginItem() {
+        let s = LoginItem.state
+        if s != loginItem { loginItem = s; AppLog.log("login item: \(s)") }
+    }
+
+    func setLoginItem(_ on: Bool) {
+        let err = LoginItem.set(on)
+        loginItemFailed = err != nil
+        AppLog.log("login item \(on ? "register" : "unregister")" + (err.map { " failed: \($0)" } ?? ""))
+        loginItem = LoginItem.state
+        if loginItem == .requiresApproval && on { LoginItem.openSystemSettings() }
     }
 
     func refreshPermissions() {
@@ -324,6 +345,7 @@ final class AppController: ObservableObject {
     }
 
     func openSettings() {
+        refreshLoginItem()
         if settingsWindow == nil { settingsWindow = SettingsWindowController(app: self) }
         settingsWindow?.show()
     }
