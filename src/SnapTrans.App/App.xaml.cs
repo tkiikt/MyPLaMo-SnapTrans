@@ -24,15 +24,20 @@ public partial class App : Application
         instance = new Mutex(true, "Local\\MyPLaMo.SnapTrans" + suffix, out var first);
         // Launching the exe again opens the settings of the running instance.
         var show = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\MyPLaMo.SnapTrans.Show" + suffix);
+        bool atSignIn = AutoStart.LaunchedAtSignIn;
         if (!first) {
-            show.Set();
+            // A sign-in start while SnapTrans already runs stays silent; any other launch opens its settings.
+            if (!atSignIn) show.Set();
             Exit();
             return;
         }
         var ui = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         ThreadPool.RegisterWaitForSingleObject(show, (_, _) => ui.TryEnqueue(() => Host?.OpenSettings()), null, -1, false);
+        if (atSignIn) AppHost.Log("started at sign-in");
+        // The ZIP folder may have moved since the switch was turned on: keep the Run entry pointing at this copy.
+        AutoStart.RepairLocation();
         Host = new AppHost();
-        Host.Start();
+        Host.Start(quiet: atSignIn);
         if (Environment.GetCommandLineArgs().Contains("--settings")) Host.OpenSettings();
     }
 }

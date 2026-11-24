@@ -4,8 +4,8 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <!-- Release version for the app and the launcher. packaging\package.ps1 can override it with -Version. -->
-    <Version>1.1.0</Version>
-    <!-- Keep the file / product version plain ("1.1.0", not "1.1.0+<commit>"). -->
+    <Version>1.2.0</Version>
+    <!-- Keep the file / product version plain ("1.2.0", not "1.2.0+<commit>"). -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Company>MyPLaMo SnapTrans</Company>
     <Product>MyPLaMo SnapTrans</Product>

@@ -81,19 +81,21 @@ public sealed class AppHost
         Loc.Changed += () => { UpdateTip(); popup?.ApplyStrings(); };
     }
 
-    public void Start()
+    /// <param name="quiet">Started at sign-in: stay in the tray and report problems with a balloon only (no settings window).</param>
+    public void Start(bool quiet = false)
     {
+        void ShowSettings() { if (!quiet) OpenSettings(); }
         if (input.AnotherInstanceOwnsHooks) {
             Log("input hooks: owned by another SnapTrans instance");
             tray.ShowBalloon(Loc.T("AppName"), Loc.T("Hook_OtherInstance"));
-            OpenSettings();
+            ShowSettings();
             return;
         }
         if (input.HookError is { } hookError) {
             // Without the hooks drag-to-translate cannot work: say so instead of showing "ready".
             Log("hook install failed: " + hookError);
             tray.ShowBalloon(Loc.T("AppName"), Loc.T("Hook_Failed"));
-            OpenSettings();
+            ShowSettings();
             return;
         }
         var m = ModelInfo.Find(Settings.ModelId);
@@ -102,7 +104,7 @@ public sealed class AppHost
             tray.ShowBalloon(Loc.T("AppName"), Loc.F("Balloon_Ready", ShortcutText(Settings.Modifiers)));
             _ = EnsureVerifiedAsync(preload: true);
         } else {
-            OpenSettings();
+            ShowSettings();
             tray.ShowBalloon(Loc.T("AppName"), Loc.T(state == ModelState.Corrupt ? "Balloon_Corrupt" : "Balloon_NoModel"));
         }
     }

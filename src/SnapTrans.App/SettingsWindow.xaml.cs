@@ -73,6 +73,8 @@ public sealed partial class SettingsWindow : Window
         ApplyTheme();
         ApplyStrings();
         Root.ActualThemeChanged += (_, _) => UpdateCaption();
+        // Re-read the Run entry whenever the window comes forward, so the switch matches the registry.
+        Activated += (_, e) => { if (e.WindowActivationState != WindowActivationState.Deactivated) RefreshAutoStart(); };
         Loc.Changed += OnLanguageChanged;
         host.StateChanged += Refresh;
         Closed += (_, _) => { Loc.Changed -= OnLanguageChanged; host.StateChanged -= Refresh; download?.Cancel(); };
@@ -118,6 +120,8 @@ public sealed partial class SettingsWindow : Window
         ComboBoxHelper(OcrEngineBox, Loc.T("Ocr_Engine")); ComboBoxHelper(OcrLanguageBox, Loc.T("Ocr_Language"));
         AppearanceTitle.Text = Loc.T("Sec_Appearance");
         ComboBoxHelper(UiLanguageBox, Loc.T("UiLanguage")); ComboBoxHelper(ThemeBox, Loc.T("Theme"));
+        StartupTitle.Text = Loc.T("Sec_Startup"); AutoStartSwitch.Header = Loc.T("AutoStart_Label"); AutoStartSwitch.OnContent = Loc.T("Switch_On"); AutoStartSwitch.OffContent = Loc.T("Switch_Off"); AutoStartDesc.Text = Loc.T("AutoStart_Desc");
+        RefreshAutoStart();
         LastTitle.Text = Loc.T("Sec_Last"); LastNone.Text = Loc.T("Last_None");
         LastSourceLabel.Text = Loc.T("Last_Source"); LastResultLabel.Text = Loc.T("Last_Result");
         AboutTitle.Text = Loc.T("Sec_About");
@@ -141,6 +145,36 @@ public sealed partial class SettingsWindow : Window
         FillOcrLanguages();
         FillDevices();
         Refresh();
+    }
+
+    // ---------------- Startup ----------------
+    /// <summary>Message under the switch: the "moved" notice (once per session) or the last write error.</summary>
+    string? autoStartMessage = AutoStart.RelocatedThisSession ? "AutoStart_Relocated" : null;
+    string autoStartError = "";
+
+    /// <summary>Shows the actual Run entry (it may have been removed or added outside SnapTrans).</summary>
+    void RefreshAutoStart()
+    {
+        bool was = loading;
+        loading = true;
+        AutoStartSwitch.IsOn = AutoStart.IsEnabled;
+        loading = was;
+        AutoStartStatus.Text = autoStartMessage == null ? "" : Loc.F(autoStartMessage, autoStartError);
+        AutoStartStatus.Visibility = autoStartMessage == null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    void AutoStart_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (loading) return;
+        try {
+            AutoStart.SetEnabled(AutoStartSwitch.IsOn);
+            autoStartMessage = null;
+        } catch (Exception ex) {
+            AppHost.LogError("autostart write", ex);
+            autoStartMessage = "AutoStart_Failed";
+            autoStartError = Loc.Error(ex);
+        }
+        RefreshAutoStart();
     }
 
     static void ComboBoxHelper(ComboBox box, string header) => box.Header = header;

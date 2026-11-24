@@ -139,6 +139,16 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Startup: the state is read from the HKCU Run entry, never stored in settings.json -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="StartupTitle" Style="{StaticResource SectionTitle}" />
+                        <ToggleSwitch x:Name="AutoStartSwitch" Toggled="AutoStart_Toggled" AutomationProperties.AutomationId="AutoStartSwitch" />
+                        <TextBlock x:Name="AutoStartDesc" Style="{StaticResource Note}" />
+                        <TextBlock x:Name="AutoStartStatus" Style="{StaticResource Note}" Visibility="Collapsed" AutomationProperties.AutomationId="AutoStartStatus" />
+                    </StackPanel>
+                </Border>
+
                 <!-- Last translation -->
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="8">

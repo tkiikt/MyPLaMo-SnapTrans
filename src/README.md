@@ -23,7 +23,7 @@ For an overview, usage, and installation instructions, see the root [README.md](
 ```powershell
 # 配布用 ZIP（dist\MyPLaMo-SnapTrans-<version>-win-x64.zip と .sha256）
 pwsh -File packaging\package.ps1                 # バージョンは Directory.Build.props
-pwsh -File packaging\package.ps1 -Version 1.1.0
+pwsh -File packaging\package.ps1 -Version 1.2.0
 
 # 開発用（ランチャーなしの発行フォルダー release\MyPLaMo-SnapTrans\）
 pwsh -File build.ps1
@@ -77,7 +77,7 @@ Run the following from the repository root:
 ```powershell
 # Distribution ZIP (dist\MyPLaMo-SnapTrans-<version>-win-x64.zip and .sha256)
 pwsh -File packaging\package.ps1                 # version from Directory.Build.props
-pwsh -File packaging\package.ps1 -Version 1.1.0
+pwsh -File packaging\package.ps1 -Version 1.2.0
 
 # Development build without the launcher (release\MyPLaMo-SnapTrans\)
 pwsh -File build.ps1

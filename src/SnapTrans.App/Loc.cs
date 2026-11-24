@@ -164,6 +164,14 @@ public static class Loc
         ["Theme_Light"] = ("ライト", "Light"),
         ["Theme_Dark"] = ("ダーク", "Dark"),
 
+        ["Sec_Startup"] = ("起動", "Startup"),
+        ["AutoStart_Label"] = ("サインイン時に起動する（通知領域に常駐）", "Start at sign-in (stay in the notification area)"),
+        ["AutoStart_Desc"] = ("オンにすると、Windows にサインインしたときに設定画面を開かずに通知領域で待機します。現在のユーザーのスタートアップ（HKCU の Run）に登録し、管理者権限は不要です。アプリのフォルダーを削除する前にオフにしてください。", "When on, SnapTrans starts in the notification area without opening this window when you sign in to Windows. It is registered for the current user only (HKCU Run) and needs no admin rights. Turn it off before deleting the app folder."),
+        ["AutoStart_Relocated"] = ("アプリのフォルダーが移動されていたため、サインイン時の起動先をこの場所に更新しました。", "The app folder had moved, so sign-in startup now points to this location."),
+        ["Switch_On"] = ("オン", "On"),
+        ["Switch_Off"] = ("オフ", "Off"),
+        ["AutoStart_Failed"] = ("サインイン時の起動を変更できませんでした: {0}", "Could not change sign-in startup: {0}"),
+
         ["Sec_Last"] = ("最後の翻訳", "Last translation"),
         ["Last_None"] = ("まだ翻訳していません。", "Nothing translated yet."),
         ["Last_Source"] = ("原文", "Original"),
